@@ -38,72 +38,74 @@ game_manager_device := class(creative_device):
     VotingTable: creative_prop = creative_prop{}
     @editable 
     EmergencyButton: button_device = button_device{}
-    @editable 
-    PlayerFollowProps: []follow_prop = array{}
-    @editable 
-    ReportFollowProps: []report_prop = array{}
     @editable
     AudioPlayer: audio_player_device = audio_player_device{}
-   
-    var PlayerFollowPropsMap: [agent]follow_prop = map{}
-    var ReportFollowPropsMap: [agent]report_prop = map{}
+    @editable
+    FollowProps: []follow_prop = array{}
+    @editable
+    ReportProps: []report_prop = array{}
 
+    var CustomPlayers: [player]custom_player = map{}
+   
     OnBegin<override>()<suspends>:void=
-        Players := GetPlayspace().GetPlayers();
+        for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
+            if(PlayerManager := player_manager_device[CreativeObject]):
+                PlayerManager.PlayersSet.Await()
+                set CustomPlayers = PlayerManager.CustomPlayers
 
         EmergencyButton.InteractedWithEvent.Subscribe(Reported)
 
         # Setup elimination watchers for players
-        for (Player : Players):
+        for (Player -> CustomPlayer : CustomPlayers):
             if (Character := Player.GetFortCharacter[]):
                 Character.EliminatedEvent().Subscribe(HandlePlayerElimination)
 
-        SetupFollowProps(Players)
-        HandleFollowProps(Players)
+        SetupProps()
+        HandleFollowProps()
 
-    SetupFollowProps(Players: []player): void=
+    SetupProps(): void=
+        var PropsIndex: int = 0
+        
         for (CreativeObject : Self.FindCreativeObjectsWithTag(team_device_tag{})):
-            for (Index -> Player : Players):
+            for (Player -> CustomPlayer : CustomPlayers):
                 if:
-                    TeamDevice := team_device[CreativeObject]
-                    TeamDevice.Imposters[Player]
-                else:
-                    if:
-                        FortCharacter := Player.GetFortCharacter[]
-                        Agent := FortCharacter.GetAgent[]
+                    CustomPlayer.IsImposter = false
 
-                        FollowProp := PlayerFollowProps[Index]
-                        set PlayerFollowPropsMap[Agent] = FollowProp
+                    FortCharacter := Player.GetFortCharacter[]
+                    Agent := FortCharacter.GetAgent[]
 
-                        ReportProp := ReportFollowProps[Index]
-                        set ReportFollowPropsMap[Agent] = ReportProp
-                    then:
-                        # Report
-                        ReportProp.ReportButton.InteractedWithEvent.Subscribe(Reported)
+                    FollowProp := FollowProps[PropsIndex]
+                    set CustomPlayer.FollowProps = FollowProp
 
-                        # Eliminate
-                        FollowProp.EliminateButton.InteractedWithEvent.Subscribe(EliminatePlayerHandler{Device := Self, EliminatingAgent := Agent}.HandlerFunction)
+                    ReportProp := ReportProps[PropsIndex]
+                    set CustomPlayer.ReportProps = ReportProp
+                then:
+                    # Report
+                    CustomPlayer.ReportProps.ReportButton.InteractedWithEvent.Subscribe(Reported)
+
+                    # Eliminate
+                    CustomPlayer.FollowProps.EliminateButton.InteractedWithEvent.Subscribe(EliminatePlayerHandler{Device := Self, EliminatingAgent := Agent}.HandlerFunction)
             
+                    set PropsIndex += 1 
+
     EliminatePlayer(Agent: agent): void=
         if:
             Player := player[Agent]
             FortCharacter := Player.GetFortCharacter[]
         then:
             FortCharacter.Damage(100000.0)
-            Print("Eliminate")
 
-    HandleFollowProps(Players: []player)<suspends>: void=
+    HandleFollowProps()<suspends>: void=
         loop:
             Sleep(0.0)
 
-            for (Player : Players):
+            for (Player -> CustomPlayer : CustomPlayers):
                 if:
-                    FortCharacter := Player.GetFortCharacter[]
-                    Agent := FortCharacter.GetAgent[]
+                    CustomPlayer.IsImposter = false
 
-                    FollowProp := PlayerFollowPropsMap[Agent]
+                    FortCharacter := Player.GetFortCharacter[]
                 then:
-                    if(FollowProp.MoveableProp.TeleportTo[
+                    if(CustomPlayer.FollowProps.MoveableProp.TeleportTo[
                         FortCharacter.GetTransform().Translation, 
                         FortCharacter.GetTransform().Rotation
                     ]):  
@@ -123,7 +125,6 @@ game_manager_device := class(creative_device):
                 # Allow the report button to be activated
                 EnableReport(Agent);
         
-        
         if(Agent := FortCharacter.GetAgent[]):
             ResetImposterCooldown(Agent)
 
@@ -131,9 +132,10 @@ game_manager_device := class(creative_device):
         for(CreativeObject : FindCreativeObjectsWithTag(team_device_tag{})):
             if:
                 TeamDevice := team_device[CreativeObject]
-                CurrentPlayer := player[Agent]
+                Player := player[Agent]
 
-                Imposter := TeamDevice.Imposters[CurrentPlayer]
+                CustomPlayer := CustomPlayers[Player]
+                CustomPlayer.IsImposter = true
             then:
                 TeamDevice.CanNotEliminateClassSelector.ChangeClass(Agent)
 
@@ -142,20 +144,19 @@ game_manager_device := class(creative_device):
 
     EnableReport(Agent: agent): void=        
         if:
-            ReportProp := ReportFollowPropsMap[Agent]
             Player := player[Agent]
             FortCharacter := Player.GetFortCharacter[]
 
-            FollowProp := PlayerFollowPropsMap[Agent]
+            CustomPlayer := CustomPlayers[Player]
         then:
             Translation := FortCharacter.GetTransform().Translation
 
-            if(ReportProp.MoveableProp.TeleportTo[
+            if(CustomPlayer.ReportProps.MoveableProp.TeleportTo[
                 vector3{X := Translation.X, Y := Translation.Y, Z := 0.0}, 
                 FortCharacter.GetTransform().Rotation
             ]):  
 
-            FollowProp.EliminateButton.Disable()
+            CustomPlayer.FollowProps.EliminateButton.Disable()
 
     Reported(Agent: agent): void=
         AudioPlayer.Play()

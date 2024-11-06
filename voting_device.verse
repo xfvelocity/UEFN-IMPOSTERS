@@ -82,6 +82,8 @@ voting_device := class(creative_device):
         spawn:
             AsyncCountdown()
 
+        Print("AddUI")
+
         for (Player : GetPlayspace().GetPlayers()):
             if:
                 Character := Player.GetFortCharacter[]
