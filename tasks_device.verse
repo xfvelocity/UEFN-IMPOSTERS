@@ -2,7 +2,211 @@
 using { /Fortnite.com/Devices }
 using { /Verse.org/Simulation }
 using { /UnrealEngine.com/Temporary/Diagnostics }
+using { /Verse.org/Random }
+using { /Fortnite.com/Characters }
+using { /UnrealEngine.com/Temporary/UI }
+using { /Fortnite.com/UI }
+using { /UnrealEngine.com/Temporary/SpatialMath }
+using { /Verse.org/Colors/NamedColors }
+
+Task := enum{AdminDownload, CaffeteriaDownload, CommunicationsDownload, ElectricalDownload, NavDownload, WeaponsDownload}
+
+download_tasks := class<concrete>:
+    @editable
+    AdminDownload: button_device = button_device{}
+    @editable
+    CaffeteriaDownload: button_device = button_device{}
+    @editable
+    CommunicationsDownload: button_device = button_device{}
+    @editable
+    ElectricalDownload: button_device = button_device{}
+    @editable
+    NavDownload: button_device = button_device{}
+    @editable
+    WeaponsDownload: button_device = button_device{}
+
+player_class := class<concrete>:
+    @editable 
+    ClassSelector: class_and_team_selector_device = class_and_team_selector_device{}
+    @editable 
+    MapIndictators: []map_indicator_device = array{}
+
+download_task := class<concrete>:
+    @editable 
+    Button: button_device = button_device{}
 
 tasks_device := class(creative_device):
+    @editable
+    Downloads: download_tasks = download_tasks{}
+    @editable
+    PlayerClasses: []player_class = array{}
+
+    var CustomPlayers: [player]custom_player = map{}
+    var DownloadTaskComplete: logic = false
+
+    TaskList: [int][]Task = map{
+        10 => array{Task.AdminDownload, Task.CaffeteriaDownload, Task.CommunicationsDownload}
+        11 => array{Task.ElectricalDownload, Task.NavDownload, Task.WeaponsDownload}
+    }
+
     OnBegin<override>()<suspends>:void=
-        Print("Hello, world!")
+        for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
+            if(PlayerManager := player_manager_device[CreativeObject]):
+                PlayerManager.PlayersSet.Await()
+                set CustomPlayers = PlayerManager.CustomPlayers
+
+        AssignTasks()
+
+    AssignTasks(): void=
+        for (Player -> CustomPlayer : CustomPlayers):
+            RandomClassIndex: int = GetRandomInt(10, TaskList.Length + 9)
+
+            Print("{RandomClassIndex}")
+
+            if:
+                PlayerClass := PlayerClasses[RandomClassIndex - 10]
+                FortCharacter := Player.GetFortCharacter[]
+                Agent := FortCharacter.GetAgent[]
+
+                SelectedTasks := TaskList[RandomClassIndex]
+            then:
+                PlayerClass.ClassSelector.ChangeClass(Agent)
+                set CustomPlayer.Tasks.TaskList = SelectedTasks
+
+                for(Index -> SelectedTask : SelectedTasks):
+                    if(MapIndicator := PlayerClass.MapIndictators[Index]):
+                        MapIndicator.Enable()
+
+                        # Admin Download
+                        if:
+                            SelectedTask = Task.AdminDownload
+                            MapIndicator.TeleportTo[Downloads.AdminDownload.GetTransform()]
+                            Downloads.AdminDownload.InteractedWithEvent.Subscribe(OnAdminDownload)
+                            
+                        # Communications Download
+                        if:
+                            SelectedTask = Task.CommunicationsDownload
+                            MapIndicator.TeleportTo[Downloads.CommunicationsDownload.GetTransform()]
+                            Downloads.CommunicationsDownload.InteractedWithEvent.Subscribe(OnCommunicationsDownload)
+
+                        # Caffeteria Download
+                        if:
+                            SelectedTask = Task.CaffeteriaDownload
+                            MapIndicator.TeleportTo[Downloads.CaffeteriaDownload.GetTransform()]
+                            Downloads.CaffeteriaDownload.InteractedWithEvent.Subscribe(OnCaffeteriaDownload)
+
+                        # Weapons Download
+                        if:
+                            SelectedTask = Task.WeaponsDownload
+                            MapIndicator.TeleportTo[Downloads.WeaponsDownload.GetTransform()]
+                            Downloads.WeaponsDownload.InteractedWithEvent.Subscribe(OnWeaponsDownload)
+
+                        #  Navigation Download
+                        if:
+                            SelectedTask = Task.NavDownload
+                            MapIndicator.TeleportTo[Downloads.NavDownload.GetTransform()]
+                            Downloads.NavDownload.InteractedWithEvent.Subscribe(OnNavDownload)
+
+                        # Electric Download
+                        if:
+                            SelectedTask = Task.ElectricalDownload
+                            MapIndicator.TeleportTo[Downloads.ElectricalDownload.GetTransform()]
+                            Downloads.ElectricalDownload.InteractedWithEvent.Subscribe(OnElectricalDownload)
+
+      
+    OnAdminDownload(Agent: agent): void=
+        Print("OnAdminDownload")
+        spawn:
+            OnDownload(Agent)
+
+    OnCommunicationsDownload(Agent: agent): void=
+        Print("OnCommunicationsDownload")
+        spawn:
+            OnDownload(Agent)
+
+    OnCaffeteriaDownload(Agent: agent): void=
+        Print("OnCaffeteriaDownload")
+        spawn:
+            OnDownload(Agent)
+
+    OnNavDownload(Agent: agent): void=
+        Print("OnNavDownload")
+        spawn:
+            OnDownload(Agent)
+
+    OnWeaponsDownload(Agent: agent): void=
+        Print("OnWeaponsDownload")
+        spawn:
+            OnDownload(Agent)
+
+    OnElectricalDownload(Agent: agent): void=
+        Print("OnElectricalDownload")
+        spawn:
+            OnDownload(Agent)
+
+    OnDownload(Agent: agent)<suspends>: void=
+        if:
+            Player := player[Agent]
+            PlayerUI := GetPlayerUI[Player]
+        then:
+            var Canvas: canvas = canvas{}
+            var BackgroundImage: texture_block = texture_block{DefaultImage := Images.TabletBackground}
+            var Text: text_block = text_block{DefaultText := StringToMessage("Downloading."), DefaultJustification := text_justification.Center}
+
+
+            set Canvas = canvas:
+                Slots := array{
+                    canvas_slot:
+                        Anchors :=  anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 1.0}}
+                        Offsets := margin{Left := 0.0, Top := 0.0, Right := 0.0, Bottom := 0.0}
+                        Alignment := vector2{X := 0.0, Y := 0.0}
+                        ZOrder := 0
+                        SizeToContent := false
+                        Widget := BackgroundImage
+                    canvas_slot:
+                        Anchors :=  anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+                        Offsets := margin{Left := 0.0, Top := 0.0, Right := 0.0, Bottom := 0.0}
+                        Alignment := vector2{X := 0.5, Y := 0.5}
+                        ZOrder := 1
+                        SizeToContent := false
+                        Widget := Text
+                }
+
+            PlayerUI.AddWidget(Canvas, player_ui_slot{InputMode := ui_input_mode.All})
+
+            spawn:
+                UpdateDownloadText(Text)            
+
+            Sleep(10.0)
+
+            PlayerUI.RemoveWidget(Canvas)
+            set DownloadTaskComplete = true
+
+
+    UpdateDownloadText(Text: text_block)<suspends>: void=
+        var Index : int = 1
+        var States : []string = array{
+            "Downloading.",
+            "Downloading..",
+            "Downloading..."
+        }
+
+        loop:
+            if(DownloadTaskComplete = true):
+                set Index = 0
+                break
+
+            if(CurrentState := States[Index]):
+                Text.SetText(StringToMessage(CurrentState))
+
+                if(Index = 2):
+                    set Index = 0
+                else:
+                    set Index += 1
+
+                Sleep(1.0)
+
+
+
+        
+      

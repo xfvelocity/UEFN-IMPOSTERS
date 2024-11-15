@@ -26,12 +26,8 @@ camera_device := class(creative_device):
         EscapeTrigger.PressedEvent.Subscribe(EscapePressed)
 
         PostProcess.Enable()
-        PostProcess.BlendingInCompleteEvent.Subscribe(BlendIn)
 
         DisableInputs()
-
-    BlendIn(Agent: ?agent): void=
-        Print("Blended")
 
     ViewCameras(Agent: agent): void=
         MoveRightTrigger.Enable()

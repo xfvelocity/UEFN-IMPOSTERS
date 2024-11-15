@@ -32,12 +32,8 @@ team_device := class(creative_device):
 
                 set CustomPlayers = PlayerManager.CustomPlayers
                 set Players = PlayerManager.Players
-
-
-        Print("{CustomPlayers.Length}")
         
-        SetImposters();
-
+        # SetImposters();
 
         for(Player -> CustomPlayer : CustomPlayers):
             if:
@@ -48,7 +44,7 @@ team_device := class(creative_device):
             then:
                 # If the player isn't an imposter, add them to the crewmates
                 CrewmateClassSelector.ChangeTeam(Agent)
-                CrewmateHudDevice.Show(Agent)
+                CrewmateHudDevice.Show(Agent)   
                     
         # Once the cooldown is up, allow the player to eliminate
         Sleep(EliminateCooldown)

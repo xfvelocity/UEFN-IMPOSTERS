@@ -8,7 +8,6 @@ using { /Fortnite.com/Characters }
 using { /Verse.org/Simulation/Tags }
 using { /Verse.org/Colors/NamedColors }
 
-Task := enum{Download, Upload, CardSwipe}
 
 PlayerManagerTag := class(tag){}
 
@@ -16,7 +15,7 @@ tasks := class:
     var TasksCompleted: int = 0
     var TaskList: []Task = array{}
     var CompletedTaskList: []Task = array{}
-
+    
 custom_player := class<concrete>:
     var FollowProps: follow_prop = follow_prop{}
     var ReportProps: report_prop = report_prop{}
@@ -31,7 +30,6 @@ player_manager_device := class(creative_device):
     var PlayersSet: event() = event(){}
 
     OnBegin<override>()<suspends>:void=
-
         set Players = GetPlayspace().GetPlayers()
 
         for(Player : Players):
