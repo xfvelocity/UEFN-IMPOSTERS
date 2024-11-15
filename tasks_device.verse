@@ -9,7 +9,21 @@ using { /Fortnite.com/UI }
 using { /UnrealEngine.com/Temporary/SpatialMath }
 using { /Verse.org/Colors/NamedColors }
 
+task_ui := class<concrete>:
+    var Canvas: canvas = canvas{}
+    var BackgroundImage: texture_block = texture_block{DefaultImage := Images.OpaqueBackground}
+    var TextBlocks: [Task]text_block = map{}
+
 Task := enum{AdminDownload, CaffeteriaDownload, CommunicationsDownload, ElectricalDownload, NavDownload, WeaponsDownload}
+
+TaskString : [Task]string = map{
+    Task.AdminDownload => "Admin download",
+    Task.CaffeteriaDownload => "Caffeteria download",
+    Task.CommunicationsDownload => "Communications download",
+    Task.ElectricalDownload => "Electrical download",
+    Task.NavDownload => "Navigation download",
+    Task.WeaponsDownload => "Weapons download"
+}
 
 download_tasks := class<concrete>:
     @editable
@@ -43,6 +57,7 @@ tasks_device := class(creative_device):
 
     var CustomPlayers: [player]custom_player = map{}
     var DownloadTaskComplete: logic = false
+    var PlayerTasksCanvas: [agent]task_ui = map{}
 
     TaskList: [int][]Task = map{
         10 => array{Task.AdminDownload, Task.CaffeteriaDownload, Task.CommunicationsDownload}
@@ -56,6 +71,7 @@ tasks_device := class(creative_device):
                 set CustomPlayers = PlayerManager.CustomPlayers
 
         AssignTasks()
+        TasksUI()
 
     AssignTasks(): void=
         for (Player -> CustomPlayer : CustomPlayers):
@@ -117,34 +133,85 @@ tasks_device := class(creative_device):
     OnAdminDownload(Agent: agent): void=
         Print("OnAdminDownload")
         spawn:
-            OnDownload(Agent)
+            OnDownload(Agent, Task.AdminDownload)
 
     OnCommunicationsDownload(Agent: agent): void=
         Print("OnCommunicationsDownload")
         spawn:
-            OnDownload(Agent)
+            OnDownload(Agent, Task.CommunicationsDownload)
 
     OnCaffeteriaDownload(Agent: agent): void=
         Print("OnCaffeteriaDownload")
         spawn:
-            OnDownload(Agent)
+            OnDownload(Agent, Task.CaffeteriaDownload)
 
     OnNavDownload(Agent: agent): void=
         Print("OnNavDownload")
         spawn:
-            OnDownload(Agent)
+            OnDownload(Agent, Task.NavDownload)
 
     OnWeaponsDownload(Agent: agent): void=
         Print("OnWeaponsDownload")
         spawn:
-            OnDownload(Agent)
+            OnDownload(Agent, Task.WeaponsDownload)
 
     OnElectricalDownload(Agent: agent): void=
         Print("OnElectricalDownload")
         spawn:
-            OnDownload(Agent)
+            OnDownload(Agent, Task.ElectricalDownload)
 
-    OnDownload(Agent: agent)<suspends>: void=
+    TasksUI(): void=
+        for(Player -> CustomPlayer : CustomPlayers):
+            if:
+                FortCharacter := Player.GetFortCharacter[]
+                Agent := FortCharacter.GetAgent[]
+                set PlayerTasksCanvas[Agent] = task_ui{}
+                SelectedCanvas := PlayerTasksCanvas[Agent]
+                PlayerUI := GetPlayerUI[Player]
+            then:
+                var TitleText: text_block = text_block{DefaultText := StringToMessage("Tasks:"), DefaultTextColor := White}
+                
+                var Slots: []canvas_slot = array{
+                    canvas_slot:
+                        Anchors :=  anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 0.0, Y := 0.0}}
+                        Offsets := margin{Left := 15.0, Top := 15.0, Right := 550.0, Bottom := 380.0}
+                        Alignment := vector2{X := 0.0, Y := 0.0}
+                        ZOrder := 0
+                        SizeToContent := false
+                        Widget := SelectedCanvas.BackgroundImage
+                    canvas_slot:
+                        Anchors :=  anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 0.0, Y := 0.0}}
+                        Offsets := margin{Left := 35.0, Top := 35.0 , Right := 0.0, Bottom := 0.0}
+                        Alignment := vector2{X := 0.0, Y := 0.0}
+                        ZOrder := 1
+                        SizeToContent := false
+                        Widget := TitleText
+                }
+
+                var TextBlockIndex: int = 0
+
+                for(CustomPlayerTask : CustomPlayer.Tasks.TaskList):
+                    if(SelectedTaskString := TaskString[CustomPlayerTask]):
+                        var TextBlock : text_block = text_block{DefaultText := StringToMessage(SelectedTaskString), DefaultTextColor := White}
+
+                        set Slots += array{
+                            canvas_slot:
+                                Anchors :=  anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 0.0, Y := 0.0}}
+                                Offsets := margin{Left := 35.0, Top := 90.0 + (TextBlockIndex * 40.0), Right := 0.0, Bottom := 0.0}
+                                Alignment := vector2{X := 0.0, Y := 0.0}
+                                ZOrder := 1
+                                SizeToContent := false
+                                Widget := TextBlock
+                        }
+
+                        if(set SelectedCanvas.TextBlocks[CustomPlayerTask] = TextBlock):
+                        set TextBlockIndex += 1
+
+                set SelectedCanvas.Canvas = canvas{ Slots := Slots }
+
+                PlayerUI.AddWidget(SelectedCanvas.Canvas)
+
+    OnDownload(Agent: agent, SelectedTask: Task)<suspends>: void=
         if:
             Player := player[Agent]
             PlayerUI := GetPlayerUI[Player]
@@ -152,7 +219,6 @@ tasks_device := class(creative_device):
             var Canvas: canvas = canvas{}
             var BackgroundImage: texture_block = texture_block{DefaultImage := Images.TabletBackground}
             var Text: text_block = text_block{DefaultText := StringToMessage("Downloading."), DefaultJustification := text_justification.Center}
-
 
             set Canvas = canvas:
                 Slots := array{
@@ -182,6 +248,11 @@ tasks_device := class(creative_device):
             PlayerUI.RemoveWidget(Canvas)
             set DownloadTaskComplete = true
 
+            if:
+                SelectedCanvas := PlayerTasksCanvas[Agent]
+                SelectedTextBlock := SelectedCanvas.TextBlocks[SelectedTask]
+            then:
+                SelectedTextBlock.SetTextColor(Green)
 
     UpdateDownloadText(Text: text_block)<suspends>: void=
         var Index : int = 1
