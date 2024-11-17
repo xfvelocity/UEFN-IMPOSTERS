@@ -14,7 +14,7 @@ task_ui := class<concrete>:
     var BackgroundImage: texture_block = texture_block{DefaultImage := Images.OpaqueBackground}
     var TextBlocks: [Task]text_block = map{}
 
-Task := enum{AdminDownload, CaffeteriaDownload, CommunicationsDownload, ElectricalDownload, NavDownload, WeaponsDownload}
+Task := enum{AdminDownload, CaffeteriaDownload, CommunicationsDownload, ElectricalDownload, NavDownload, WeaponsDownload, AdminSwipe}
 
 TaskString : [Task]string = map{
     Task.AdminDownload => "Admin download",
@@ -39,6 +39,14 @@ download_tasks := class<concrete>:
     @editable
     WeaponsDownload: button_device = button_device{}
 
+card_swipe := class<concrete>:
+    @editable
+    Button: button_device = button_device{}
+
+card_swipes := class<concrete>:
+    @editable
+    AdminSwipe: card_swipe = card_swipe{}
+
 player_class := class<concrete>:
     @editable 
     ClassSelector: class_and_team_selector_device = class_and_team_selector_device{}
@@ -54,14 +62,17 @@ tasks_device := class(creative_device):
     Downloads: download_tasks = download_tasks{}
     @editable
     PlayerClasses: []player_class = array{}
+    @editable
+    CardSwipes: []card_swipes = array{}
 
     var CustomPlayers: [player]custom_player = map{}
     var DownloadTaskComplete: logic = false
     var PlayerTasksCanvas: [agent]task_ui = map{}
+    var PlayerTasksMapIndicators: [agent][Task]map_indicator_device = map{}
 
     TaskList: [int][]Task = map{
-        10 => array{Task.AdminDownload, Task.CaffeteriaDownload, Task.CommunicationsDownload}
-        11 => array{Task.ElectricalDownload, Task.NavDownload, Task.WeaponsDownload}
+        10 => array{Task.AdminDownload, Task.CaffeteriaDownload, Task.CommunicationsDownload, Task.AdminSwipe}
+        11 => array{Task.ElectricalDownload, Task.NavDownload, Task.WeaponsDownload, Task.AdminSwipe}
     }
 
     OnBegin<override>()<suspends>:void=
@@ -77,20 +88,24 @@ tasks_device := class(creative_device):
         for (Player -> CustomPlayer : CustomPlayers):
             RandomClassIndex: int = GetRandomInt(10, TaskList.Length + 9)
 
-            Print("{RandomClassIndex}")
-
             if:
                 PlayerClass := PlayerClasses[RandomClassIndex - 10]
                 FortCharacter := Player.GetFortCharacter[]
                 Agent := FortCharacter.GetAgent[]
 
                 SelectedTasks := TaskList[RandomClassIndex]
+                set PlayerTasksMapIndicators[Agent] = map{}
+
             then:
                 PlayerClass.ClassSelector.ChangeClass(Agent)
-                set CustomPlayer.Tasks.TaskList = SelectedTasks
 
                 for(Index -> SelectedTask : SelectedTasks):
-                    if(MapIndicator := PlayerClass.MapIndictators[Index]):
+                    if:
+                        set CustomPlayer.Tasks.TaskList[SelectedTask] = false
+
+                        MapIndicator := PlayerClass.MapIndictators[Index]
+                        set PlayerTasksMapIndicators[Agent][SelectedTask] = MapIndicator
+                    then:
                         MapIndicator.Enable()
 
                         # Admin Download
@@ -124,6 +139,12 @@ tasks_device := class(creative_device):
                             Downloads.NavDownload.InteractedWithEvent.Subscribe(OnNavDownload)
 
                         # Electric Download
+                        if:
+                            SelectedTask = Task.ElectricalDownload
+                            MapIndicator.TeleportTo[Downloads.ElectricalDownload.GetTransform()]
+                            Downloads.ElectricalDownload.InteractedWithEvent.Subscribe(OnElectricalDownload)
+
+                        # Admin Swipe
                         if:
                             SelectedTask = Task.ElectricalDownload
                             MapIndicator.TeleportTo[Downloads.ElectricalDownload.GetTransform()]
@@ -190,8 +211,8 @@ tasks_device := class(creative_device):
 
                 var TextBlockIndex: int = 0
 
-                for(CustomPlayerTask : CustomPlayer.Tasks.TaskList):
-                    if(SelectedTaskString := TaskString[CustomPlayerTask]):
+                for(CustomTask -> CustomTaskComplete : CustomPlayer.Tasks.TaskList):
+                    if(SelectedTaskString := TaskString[CustomTask]):
                         var TextBlock : text_block = text_block{DefaultText := StringToMessage(SelectedTaskString), DefaultTextColor := White}
 
                         set Slots += array{
@@ -204,7 +225,7 @@ tasks_device := class(creative_device):
                                 Widget := TextBlock
                         }
 
-                        if(set SelectedCanvas.TextBlocks[CustomPlayerTask] = TextBlock):
+                        if(set SelectedCanvas.TextBlocks[CustomTask] = TextBlock):
                         set TextBlockIndex += 1
 
                 set SelectedCanvas.Canvas = canvas{ Slots := Slots }
@@ -212,6 +233,8 @@ tasks_device := class(creative_device):
                 PlayerUI.AddWidget(SelectedCanvas.Canvas)
 
     OnDownload(Agent: agent, SelectedTask: Task)<suspends>: void=
+        set DownloadTaskComplete = false
+
         if:
             Player := player[Agent]
             PlayerUI := GetPlayerUI[Player]
@@ -251,8 +274,16 @@ tasks_device := class(creative_device):
             if:
                 SelectedCanvas := PlayerTasksCanvas[Agent]
                 SelectedTextBlock := SelectedCanvas.TextBlocks[SelectedTask]
+
+                SelectedTaskString := TaskString[SelectedTask]
+                SelectedMapIndicator := PlayerTasksMapIndicators[Agent][SelectedTask]
+
+                CustomPlayer := CustomPlayers[Player]
+                set CustomPlayer.Tasks.TaskList[SelectedTask] = true
             then:
                 SelectedTextBlock.SetTextColor(Green)
+                SelectedMapIndicator.Disable()
+
 
     UpdateDownloadText(Text: text_block)<suspends>: void=
         var Index : int = 1

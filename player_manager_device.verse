@@ -13,7 +13,7 @@ PlayerManagerTag := class(tag){}
 
 tasks := class:
     var TasksCompleted: int = 0
-    var TaskList: []Task = array{}
+    var TaskList: [Task]logic = map{}
     var CompletedTaskList: []Task = array{}
     
 custom_player := class<concrete>:
