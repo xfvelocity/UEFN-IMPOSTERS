@@ -3,14 +3,18 @@ using { /Verse.org/Simulation }
 using { /UnrealEngine.com/Temporary/Diagnostics }
 using { /Fortnite.com/Characters }
 using { /UnrealEngine.com/Temporary/SpatialMath }
+using { /UnrealEngine.com/Temporary/UI }
+using { /Fortnite.com/UI }
+using { /Verse.org/Colors/NamedColors }
 
 VentPressHandler := class:
     Device: vent_device   
     Vent: selectable_vent
     ButtonIndex: int = 0
+    VentIndex: int = 0
 
     HandlerFunction(Agent: agent): void=
-        Device.OnVent(Agent, Vent, ButtonIndex)
+        Device.OnVent(Agent, Vent, ButtonIndex, VentIndex)
 
 selectable_vent := class<concrete>:
     @editable
@@ -34,17 +38,50 @@ vent_device := class(creative_device):
 
     var CurrentCameraIndex: int = 0
     var SelectedVentCopy: selectable_vent = selectable_vent{}
+    var UIText: [agent]text_block = map{}
+    var UICanvas: [agent]canvas = map{}
+    var SelectedVentIndex: int = 0
+    var VentNames: [int][int]string = map{
+        0 => map {
+            0 => "Caffeteria",
+            1 => "Admin",
+            2 => "Corridor"
+        },
+        1 => map {
+            0 => "Weapons",
+            1 => "Navigation (Top)"
+        },
+        2 => map {
+            0 => "Navigation (Bottom)",
+            1 => "Shields"
+        },
+        3 => map {
+            0 => "Lower Engine",
+            1 => "Reactor (Bottom)"
+        },
+        4 => map {
+            0 => "Reactor (Top)",
+            1 => "Upper Engine"
+        },
+        5 => map {
+            0 => "Electrical",
+            1 => "Security",
+            2 => "Medbay"
+        }
+    }
+
+
     
     OnBegin<override>()<suspends>:void=
         MoveRightTrigger.PressedEvent.Subscribe(MoveRightPressed)
         MoveLeftTrigger.PressedEvent.Subscribe(MoveLeftPressed)
         EscapeTrigger.PressedEvent.Subscribe(EscapePressed)
 
-        for (Vent : Vents):
+        for (VentIndex -> Vent : Vents):            
             for(Index -> Button : Vent.Buttons):
-                Button.InteractedWithEvent.Subscribe(VentPressHandler{Device := Self, Vent := Vent, ButtonIndex := Index}.HandlerFunction)
+                Button.InteractedWithEvent.Subscribe(VentPressHandler{Device := Self, Vent := Vent, ButtonIndex := Index, VentIndex := VentIndex}.HandlerFunction)
 
-    OnVent(Agent: agent, Vent: selectable_vent, ButtonIndex: int): void=
+    OnVent(Agent: agent, Vent: selectable_vent, ButtonIndex: int, VentIndex: int): void=
         if:
             Player := player[Agent]
             FortCharacter := Player.GetFortCharacter[]
@@ -53,14 +90,49 @@ vent_device := class(creative_device):
             
         set CurrentCameraIndex = ButtonIndex
         set SelectedVentCopy = Vent
-        AudioPlayer.Play()
-
+        set SelectedVentIndex = VentIndex
+        
+        AudioPlayer.Play(Agent)
         MoveRightTrigger.Enable()
         MoveLeftTrigger.Enable()
         EscapeTrigger.Enable()
+
+        SetupUI(Agent)
         ChangeCamera(Agent)
 
+
+    SetupUI(Agent: agent): void=
+        if:
+            Player := player[Agent]
+            PlayerUI := GetPlayerUI[Player]
+
+            set UIText[Agent] = text_block{DefaultJustification := text_justification.Center, DefaultTextColor := White}
+            TextBlock := UIText[Agent]
+        then:
+            var Canvas: canvas = canvas:
+                Slots := array{
+                    canvas_slot:
+                        Anchors :=  anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+                        Offsets := margin{Left := 0.0, Top := 450.0, Right := 0.0, Bottom := 0.0}
+                        Alignment := vector2{X := 0.5, Y := 0.5}
+                        ZOrder := 1
+                        SizeToContent := false
+                        Widget := TextBlock
+                }
+
+            if:
+                set UICanvas[Agent] = Canvas
+            then:
+                PlayerUI.AddWidget(Canvas)
+
+
     ChangeCamera(Agent: agent): void=
+        if:
+            TextBlock := UIText[Agent]
+            VentName := VentNames[SelectedVentIndex][CurrentCameraIndex]
+        then:
+            TextBlock.SetText(StringToMessage(VentName))
+
         if(Camera := SelectedVentCopy.Cameras[CurrentCameraIndex]):
             Camera.AddTo(Agent)
 
@@ -72,11 +144,21 @@ vent_device := class(creative_device):
         
         ChangeCamera(Agent)
 
-    DisableInputs() :void=
+    DisableInputs(Agent: agent) :void=
         MoveRightTrigger.Disable()
         MoveLeftTrigger.Disable()
         EscapeTrigger.Disable()
 
+        if:
+            Player := player[Agent]
+            PlayerUI := GetPlayerUI[Player]
+
+            Canvas := UICanvas[Agent]
+        then:
+            PlayerUI.RemoveWidget(Canvas)
+
+        AudioPlayer.Play(Agent)
+        
     MoveLeftPressed(Agent: agent): void=
         if(CurrentCameraIndex = 0):
             set CurrentCameraIndex = SelectedVentCopy.Cameras.Length - 1
@@ -86,7 +168,7 @@ vent_device := class(creative_device):
         ChangeCamera(Agent)
 
     EscapePressed(Agent: agent): void=
-        DisableInputs()
+        DisableInputs(Agent)
 
         if:
             Player := player[Agent]
