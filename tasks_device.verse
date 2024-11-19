@@ -22,7 +22,8 @@ TaskString : [Task]string = map{
     Task.CommunicationsDownload => "Communications download",
     Task.ElectricalDownload => "Electrical download",
     Task.NavDownload => "Navigation download",
-    Task.WeaponsDownload => "Weapons download"
+    Task.WeaponsDownload => "Weapons download",
+    Task.AdminSwipe => "Admin swipe"
 }
 
 download_tasks := class<concrete>:
@@ -42,6 +43,8 @@ download_tasks := class<concrete>:
 card_swipe := class<concrete>:
     @editable
     Button: button_device = button_device{}
+    @editable
+    Tracker: tracker_device = tracker_device{}
 
 card_swipes := class<concrete>:
     @editable
@@ -63,7 +66,7 @@ tasks_device := class(creative_device):
     @editable
     PlayerClasses: []player_class = array{}
     @editable
-    CardSwipes: []card_swipes = array{}
+    CardSwipes: card_swipes = card_swipes{}
 
     var CustomPlayers: [player]custom_player = map{}
     var DownloadTaskComplete: logic = false
@@ -146,38 +149,34 @@ tasks_device := class(creative_device):
 
                         # Admin Swipe
                         if:
-                            SelectedTask = Task.ElectricalDownload
-                            MapIndicator.TeleportTo[Downloads.ElectricalDownload.GetTransform()]
-                            Downloads.ElectricalDownload.InteractedWithEvent.Subscribe(OnElectricalDownload)
+                            SelectedTask = Task.AdminSwipe
+                            MapIndicator.TeleportTo[CardSwipes.AdminSwipe.Button.GetTransform()]
+                            CardSwipes.AdminSwipe.Tracker.CompleteEvent.Subscribe(SwipeComplete)
 
-      
+    SwipeComplete(Agent: agent): void=
+        OnTaskComplete(Agent, Task.AdminSwipe)
+
     OnAdminDownload(Agent: agent): void=
-        Print("OnAdminDownload")
         spawn:
             OnDownload(Agent, Task.AdminDownload)
 
     OnCommunicationsDownload(Agent: agent): void=
-        Print("OnCommunicationsDownload")
         spawn:
             OnDownload(Agent, Task.CommunicationsDownload)
 
     OnCaffeteriaDownload(Agent: agent): void=
-        Print("OnCaffeteriaDownload")
         spawn:
             OnDownload(Agent, Task.CaffeteriaDownload)
 
     OnNavDownload(Agent: agent): void=
-        Print("OnNavDownload")
         spawn:
             OnDownload(Agent, Task.NavDownload)
 
     OnWeaponsDownload(Agent: agent): void=
-        Print("OnWeaponsDownload")
         spawn:
             OnDownload(Agent, Task.WeaponsDownload)
 
     OnElectricalDownload(Agent: agent): void=
-        Print("OnElectricalDownload")
         spawn:
             OnDownload(Agent, Task.ElectricalDownload)
 
@@ -271,19 +270,23 @@ tasks_device := class(creative_device):
             PlayerUI.RemoveWidget(Canvas)
             set DownloadTaskComplete = true
 
-            if:
-                SelectedCanvas := PlayerTasksCanvas[Agent]
-                SelectedTextBlock := SelectedCanvas.TextBlocks[SelectedTask]
+            OnTaskComplete(Agent, SelectedTask)
 
-                SelectedTaskString := TaskString[SelectedTask]
-                SelectedMapIndicator := PlayerTasksMapIndicators[Agent][SelectedTask]
+    OnTaskComplete(Agent: agent, SelectedTask: Task): void=
+        if:
+            Player := player[Agent]
 
-                CustomPlayer := CustomPlayers[Player]
-                set CustomPlayer.Tasks.TaskList[SelectedTask] = true
-            then:
-                SelectedTextBlock.SetTextColor(Green)
-                SelectedMapIndicator.Disable()
+            SelectedCanvas := PlayerTasksCanvas[Agent]
+            SelectedTextBlock := SelectedCanvas.TextBlocks[SelectedTask]
 
+            SelectedTaskString := TaskString[SelectedTask]
+            SelectedMapIndicator := PlayerTasksMapIndicators[Agent][SelectedTask]
+
+            CustomPlayer := CustomPlayers[Player]
+            set CustomPlayer.Tasks.TaskList[SelectedTask] = true
+        then:
+            SelectedTextBlock.SetTextColor(Green)
+            SelectedMapIndicator.Disable()
 
     UpdateDownloadText(Text: text_block)<suspends>: void=
         var Index : int = 1

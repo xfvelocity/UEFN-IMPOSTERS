@@ -69,10 +69,10 @@ vent_device := class(creative_device):
             2 => "Medbay"
         }
     }
-
-
     
     OnBegin<override>()<suspends>:void=
+        DisableInputs();
+
         MoveRightTrigger.PressedEvent.Subscribe(MoveRightPressed)
         MoveLeftTrigger.PressedEvent.Subscribe(MoveLeftPressed)
         EscapeTrigger.PressedEvent.Subscribe(EscapePressed)
@@ -100,7 +100,6 @@ vent_device := class(creative_device):
         SetupUI(Agent)
         ChangeCamera(Agent)
 
-
     SetupUI(Agent: agent): void=
         if:
             Player := player[Agent]
@@ -125,7 +124,6 @@ vent_device := class(creative_device):
             then:
                 PlayerUI.AddWidget(Canvas)
 
-
     ChangeCamera(Agent: agent): void=
         if:
             TextBlock := UIText[Agent]
@@ -144,21 +142,11 @@ vent_device := class(creative_device):
         
         ChangeCamera(Agent)
 
-    DisableInputs(Agent: agent) :void=
+    DisableInputs() :void=
         MoveRightTrigger.Disable()
         MoveLeftTrigger.Disable()
         EscapeTrigger.Disable()
 
-        if:
-            Player := player[Agent]
-            PlayerUI := GetPlayerUI[Player]
-
-            Canvas := UICanvas[Agent]
-        then:
-            PlayerUI.RemoveWidget(Canvas)
-
-        AudioPlayer.Play(Agent)
-        
     MoveLeftPressed(Agent: agent): void=
         if(CurrentCameraIndex = 0):
             set CurrentCameraIndex = SelectedVentCopy.Cameras.Length - 1
@@ -168,7 +156,7 @@ vent_device := class(creative_device):
         ChangeCamera(Agent)
 
     EscapePressed(Agent: agent): void=
-        DisableInputs(Agent)
+        DisableInputs()
 
         if:
             Player := player[Agent]
@@ -180,5 +168,14 @@ vent_device := class(creative_device):
         for(Camera : SelectedVentCopy.Cameras):
             Camera.RemoveFrom(Agent)
 
+        if:
+            Player := player[Agent]
+            PlayerUI := GetPlayerUI[Player]
+
+            Canvas := UICanvas[Agent]
+        then:
+            PlayerUI.RemoveWidget(Canvas)
+
+        AudioPlayer.Play(Agent)
         set CurrentCameraIndex = 0
         
