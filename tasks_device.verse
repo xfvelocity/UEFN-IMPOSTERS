@@ -9,21 +9,37 @@ using { /Fortnite.com/UI }
 using { /UnrealEngine.com/Temporary/SpatialMath }
 using { /Verse.org/Colors/NamedColors }
 
+
+
+TaskHandler := class:
+    Device: tasks_device   
+    SelectedTask: Task
+
+    DownloadTask(Agent: agent): void=
+        Device.HandleDownloadTask(Agent, SelectedTask)
+
+    SwipeTask(Agent: agent): void=
+        Device.HandleSwipeTask(Agent, SelectedTask)
+
 task_ui := class<concrete>:
     var Canvas: canvas = canvas{}
     var BackgroundImage: texture_block = texture_block{DefaultImage := Images.OpaqueBackground}
     var TextBlocks: [Task]text_block = map{}
 
-Task := enum{AdminDownload, CaffeteriaDownload, CommunicationsDownload, ElectricalDownload, NavDownload, WeaponsDownload, AdminSwipe}
+Task := enum{AdminDownload, CaffeteriaDownload, CommunicationsDownload, ElectricalDownload, NavDownload, WeaponsDownload, AdminSwipe, ElectricalSwipe, ElectricalCalibration, LowerEngineSwipe, NavigationSwipe }
 
 TaskString : [Task]string = map{
-    Task.AdminDownload => "Admin download",
-    Task.CaffeteriaDownload => "Caffeteria download",
-    Task.CommunicationsDownload => "Communications download",
-    Task.ElectricalDownload => "Electrical download",
-    Task.NavDownload => "Navigation download",
-    Task.WeaponsDownload => "Weapons download",
-    Task.AdminSwipe => "Admin swipe"
+    Task.AdminDownload => "Admin: Download",
+    Task.CaffeteriaDownload => "Caffeteria: Download",
+    Task.CommunicationsDownload => "Communications: Download",
+    Task.ElectricalDownload => "Electrical: Download",
+    Task.NavDownload => "Navigation: Download",
+    Task.WeaponsDownload => "Weapons: Download",
+    Task.AdminSwipe => "Admin: Swipe",
+    Task.ElectricalSwipe => "Electrical: Swipe",
+    Task.ElectricalCalibration => "Electrical: Calibration",
+    Task.LowerEngineSwipe => "Lower Engine: Swipe",
+    Task.NavigationSwipe => "Navigation: Swipe"
 }
 
 download_tasks := class<concrete>:
@@ -49,6 +65,14 @@ card_swipe := class<concrete>:
 card_swipes := class<concrete>:
     @editable
     AdminSwipe: card_swipe = card_swipe{}
+    @editable
+    ElectricalSwipe: card_swipe = card_swipe{}
+    @editable
+    ElectricalCalibration: card_swipe = card_swipe{}
+    @editable
+    LowerEngineSwipe: card_swipe = card_swipe{}
+    @editable
+    NavigationSwipe: card_swipe = card_swipe{}
 
 player_class := class<concrete>:
     @editable 
@@ -66,7 +90,7 @@ tasks_device := class(creative_device):
     @editable
     PlayerClasses: []player_class = array{}
     @editable
-    CardSwipes: card_swipes = card_swipes{}
+    Swipes: card_swipes = card_swipes{}
 
     var CustomPlayers: [player]custom_player = map{}
     var DownloadTaskComplete: logic = false
@@ -74,8 +98,8 @@ tasks_device := class(creative_device):
     var PlayerTasksMapIndicators: [agent][Task]map_indicator_device = map{}
 
     TaskList: [int][]Task = map{
-        10 => array{Task.AdminDownload, Task.CaffeteriaDownload, Task.CommunicationsDownload, Task.AdminSwipe}
-        11 => array{Task.ElectricalDownload, Task.NavDownload, Task.WeaponsDownload, Task.AdminSwipe}
+        10 => array{Task.AdminSwipe, Task.ElectricalSwipe, Task.ElectricalCalibration, Task.LowerEngineSwipe, Task.NavigationSwipe}
+        11 => array{Task.AdminSwipe, Task.ElectricalSwipe, Task.ElectricalCalibration, Task.LowerEngineSwipe, Task.NavigationSwipe}
     }
 
     OnBegin<override>()<suspends>:void=
@@ -92,6 +116,7 @@ tasks_device := class(creative_device):
             RandomClassIndex: int = GetRandomInt(10, TaskList.Length + 9)
 
             if:
+                CustomPlayer.IsImposter = false
                 PlayerClass := PlayerClasses[RandomClassIndex - 10]
                 FortCharacter := Player.GetFortCharacter[]
                 Agent := FortCharacter.GetAgent[]
@@ -115,74 +140,81 @@ tasks_device := class(creative_device):
                         if:
                             SelectedTask = Task.AdminDownload
                             MapIndicator.TeleportTo[Downloads.AdminDownload.GetTransform()]
-                            Downloads.AdminDownload.InteractedWithEvent.Subscribe(OnAdminDownload)
+                            Downloads.AdminDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.AdminDownload}.DownloadTask)
                             
                         # Communications Download
                         if:
                             SelectedTask = Task.CommunicationsDownload
                             MapIndicator.TeleportTo[Downloads.CommunicationsDownload.GetTransform()]
-                            Downloads.CommunicationsDownload.InteractedWithEvent.Subscribe(OnCommunicationsDownload)
+                            Downloads.CommunicationsDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.CommunicationsDownload}.DownloadTask)
 
                         # Caffeteria Download
                         if:
                             SelectedTask = Task.CaffeteriaDownload
                             MapIndicator.TeleportTo[Downloads.CaffeteriaDownload.GetTransform()]
-                            Downloads.CaffeteriaDownload.InteractedWithEvent.Subscribe(OnCaffeteriaDownload)
+                            Downloads.CaffeteriaDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.CaffeteriaDownload}.DownloadTask)
 
                         # Weapons Download
                         if:
                             SelectedTask = Task.WeaponsDownload
                             MapIndicator.TeleportTo[Downloads.WeaponsDownload.GetTransform()]
-                            Downloads.WeaponsDownload.InteractedWithEvent.Subscribe(OnWeaponsDownload)
+                            Downloads.WeaponsDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.WeaponsDownload}.DownloadTask)
 
                         #  Navigation Download
                         if:
                             SelectedTask = Task.NavDownload
                             MapIndicator.TeleportTo[Downloads.NavDownload.GetTransform()]
-                            Downloads.NavDownload.InteractedWithEvent.Subscribe(OnNavDownload)
+                            Downloads.NavDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.NavDownload}.DownloadTask)
 
                         # Electric Download
                         if:
                             SelectedTask = Task.ElectricalDownload
                             MapIndicator.TeleportTo[Downloads.ElectricalDownload.GetTransform()]
-                            Downloads.ElectricalDownload.InteractedWithEvent.Subscribe(OnElectricalDownload)
+                            Downloads.ElectricalDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.ElectricalDownload}.DownloadTask)
 
                         # Admin Swipe
                         if:
                             SelectedTask = Task.AdminSwipe
-                            MapIndicator.TeleportTo[CardSwipes.AdminSwipe.Button.GetTransform()]
-                            CardSwipes.AdminSwipe.Tracker.CompleteEvent.Subscribe(SwipeComplete)
+                            MapIndicator.TeleportTo[Swipes.AdminSwipe.Button.GetTransform()]
+                            Swipes.AdminSwipe.Tracker.CompleteEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.AdminSwipe}.SwipeTask)
 
-    SwipeComplete(Agent: agent): void=
-        OnTaskComplete(Agent, Task.AdminSwipe)
+                        # Electrical Swipe
+                        if:
+                            SelectedTask = Task.ElectricalSwipe
+                            MapIndicator.TeleportTo[Swipes.ElectricalSwipe.Button.GetTransform()]
+                            Swipes.ElectricalSwipe.Tracker.CompleteEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.ElectricalSwipe}.SwipeTask)
 
-    OnAdminDownload(Agent: agent): void=
+                        # Electrical Calibrate
+                        if:
+                            SelectedTask = Task.ElectricalCalibration
+                            MapIndicator.TeleportTo[Swipes.ElectricalCalibration.Button.GetTransform()]
+                            Swipes.ElectricalCalibration.Tracker.CompleteEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.ElectricalCalibration}.SwipeTask)
+
+                        # Lower Engine Swipe
+                        if:
+                            SelectedTask = Task.LowerEngineSwipe
+                            MapIndicator.TeleportTo[Swipes.LowerEngineSwipe.Button.GetTransform()]
+                            Swipes.LowerEngineSwipe.Tracker.CompleteEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.LowerEngineSwipe}.SwipeTask)
+
+                        # Navigation Swipe
+                        if:
+                            SelectedTask = Task.NavigationSwipe
+                            MapIndicator.TeleportTo[Swipes.NavigationSwipe.Button.GetTransform()]
+                            Swipes.NavigationSwipe.Tracker.CompleteEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.NavigationSwipe}.SwipeTask)
+
+
+    HandleSwipeTask(Agent: agent, SelectedTask: Task): void=
+        OnTaskComplete(Agent, SelectedTask)
+
+    HandleDownloadTask(Agent: agent, SelectedTask: Task): void=
         spawn:
-            OnDownload(Agent, Task.AdminDownload)
-
-    OnCommunicationsDownload(Agent: agent): void=
-        spawn:
-            OnDownload(Agent, Task.CommunicationsDownload)
-
-    OnCaffeteriaDownload(Agent: agent): void=
-        spawn:
-            OnDownload(Agent, Task.CaffeteriaDownload)
-
-    OnNavDownload(Agent: agent): void=
-        spawn:
-            OnDownload(Agent, Task.NavDownload)
-
-    OnWeaponsDownload(Agent: agent): void=
-        spawn:
-            OnDownload(Agent, Task.WeaponsDownload)
-
-    OnElectricalDownload(Agent: agent): void=
-        spawn:
-            OnDownload(Agent, Task.ElectricalDownload)
+            OnDownload(Agent, SelectedTask)
 
     TasksUI(): void=
         for(Player -> CustomPlayer : CustomPlayers):
             if:
+                CustomPlayer.IsImposter = false
+
                 FortCharacter := Player.GetFortCharacter[]
                 Agent := FortCharacter.GetAgent[]
                 set PlayerTasksCanvas[Agent] = task_ui{}
