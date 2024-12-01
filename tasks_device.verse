@@ -106,6 +106,7 @@ tasks_device := class(creative_device):
     @editable
     WeaponsShooting: weapons_task = weapons_task{}
 
+    PlayerStatsManager: player_stats_manager = player_stats_manager{}
     var CustomPlayers: [player]custom_player = map{}
     var DownloadTaskComplete: logic = false
     var PlayerTasksCanvas: [agent]task_ui = map{}
@@ -398,8 +399,14 @@ tasks_device := class(creative_device):
                 set TotalTasksCompleted += 1.0
                 TaskPercentage := Round[(TotalTasksCompleted / TotalTasksAmount) * 100]
             then:
-                Print("{TotalTasksAmount}, {TotalTasksCompleted}, {TaskPercentage}")
                 SelectedTotalTaskText.SetText(StringToMessage("Total Tasks Completed: {TaskPercentage}%"))
+
+            if:
+                # Get players current stats
+                CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent]
+            then:
+                PlayerStatsManager.RecordPlayerStat(Agent, StatType.TasksCompleted, 1.0)
+                Print("{CurrentPlayerStats.TasksCompleted + 1.0}")
 
     UpdateDownloadText(Text: text_block)<suspends>: void=
         var Index : int = 1

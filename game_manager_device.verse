@@ -14,10 +14,10 @@ team_device_tag := class(tag):
 
 EliminatePlayerHandler := class:
     Device: game_manager_device   
-    EliminatingAgent: agent
+    EliminatedAgent: agent
 
     HandlerFunction(Agent: agent): void=
-        Device.EliminatePlayer(EliminatingAgent)
+        Device.EliminatePlayer(EliminatedAgent, Agent)
 
 report_prop := class<concrete>:
     @editable 
@@ -46,6 +46,7 @@ game_manager_device := class(creative_device):
     ReportProps: []report_prop = array{}
 
     var CustomPlayers: [player]custom_player = map{}
+    PlayerStatsManager: player_stats_manager = player_stats_manager{}
    
     OnBegin<override>()<suspends>:void=
         for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
@@ -84,16 +85,23 @@ game_manager_device := class(creative_device):
                     CustomPlayer.ReportProps.ReportButton.InteractedWithEvent.Subscribe(Reported)
 
                     # Eliminate
-                    CustomPlayer.FollowProps.EliminateButton.InteractedWithEvent.Subscribe(EliminatePlayerHandler{Device := Self, EliminatingAgent := Agent}.HandlerFunction)
+                    CustomPlayer.FollowProps.EliminateButton.InteractedWithEvent.Subscribe(EliminatePlayerHandler{Device := Self, EliminatedAgent := Agent}.HandlerFunction)
             
                     set PropsIndex += 1 
 
-    EliminatePlayer(Agent: agent): void=
+    EliminatePlayer(EliminatedAgent: agent, EliminatingAgent: agent): void=
         if:
-            Player := player[Agent]
+            Player := player[EliminatedAgent]
             FortCharacter := Player.GetFortCharacter[]
         then:
             FortCharacter.Damage(100000.0)
+
+            if:
+                # Get players current stats
+                CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[EliminatingAgent]
+            then:
+                PlayerStatsManager.RecordPlayerStat(EliminatingAgent, StatType.Kills, 1.0)
+                Print("{CurrentPlayerStats.Kills + 1.0}")
 
     HandleFollowProps()<suspends>: void=
         loop:

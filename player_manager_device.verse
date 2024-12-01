@@ -17,6 +17,7 @@ tasks := class:
     var CompletedTaskList: []Task = array{}
     
 custom_player := class<concrete>:
+
     var FollowProps: follow_prop = follow_prop{}
     var ReportProps: report_prop = report_prop{}
     var Tasks: tasks = tasks{}
@@ -24,6 +25,8 @@ custom_player := class<concrete>:
     var IsDead: logic = false
 
 player_manager_device := class(creative_device):
+    
+    PlayerStatsManager: player_stats_manager = player_stats_manager{}
     var CustomPlayers: [player]custom_player = map{}
     var Players: []player = array{}
 
@@ -31,6 +34,8 @@ player_manager_device := class(creative_device):
 
     OnBegin<override>()<suspends>:void=
         set Players = GetPlayspace().GetPlayers()
+
+        PlayerStatsManager.InitAllPlayers(Players)
 
         for(Player : Players):
             if(set CustomPlayers[Player] = custom_player{}){}

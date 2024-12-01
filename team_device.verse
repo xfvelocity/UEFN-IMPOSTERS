@@ -24,6 +24,7 @@ team_device := class(creative_device):
 
     var CustomPlayers: [player]custom_player = map{}
     var Players: []player = array{}
+    PlayerStatsManager: player_stats_manager = player_stats_manager{}
 
     OnBegin<override>()<suspends>:void=
         for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
@@ -36,6 +37,7 @@ team_device := class(creative_device):
         # SetImposters();
 
         for(Player -> CustomPlayer : CustomPlayers):
+
             if:
                 CustomPlayer.IsImposter = false
 
@@ -45,6 +47,12 @@ team_device := class(creative_device):
                 # If the player isn't an imposter, add them to the crewmates
                 CrewmateClassSelector.ChangeTeam(Agent)
                 CrewmateHudDevice.Show(Agent)   
+
+                if:
+                    CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent]
+                then:
+                    PlayerStatsManager.RecordPlayerStat(Agent, StatType.CrewmatePlays, 1.0)
+                    Print("{CurrentPlayerStats.CrewmatePlays + 1.0}")
                     
         # Once the cooldown is up, allow the player to eliminate
         Sleep(EliminateCooldown)
@@ -58,9 +66,14 @@ team_device := class(creative_device):
             then:
                 CanEliminateClassSelector.ChangeClass(Agent)
 
+                if:
+                    CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent]
+                then:
+                    PlayerStatsManager.RecordPlayerStat(Agent, StatType.ImposterPlays, 1.0)
+                    Print("{CurrentPlayerStats.ImposterPlays + 1.0}")
+
     SetCooldown(Agent: agent)<suspends>: void=
         Sleep(EliminateCooldown)
-        Print("Can now eliminate")
         CanEliminateClassSelector.ChangeClass(Agent)
 
     SetImposter(Player: player): void=
