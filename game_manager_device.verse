@@ -100,8 +100,8 @@ game_manager_device := class(creative_device):
                 # Get players current stats
                 CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[EliminatingAgent]
             then:
-                PlayerStatsManager.RecordPlayerStat(EliminatingAgent, StatType.Kills, 1.0)
-                Print("{CurrentPlayerStats.Kills + 1.0}")
+                PlayerStatsManager.RecordPlayerStat(EliminatingAgent, StatType.Kills, 1)
+                Print("{CurrentPlayerStats.Kills + 1}")
 
     HandleFollowProps()<suspends>: void=
         loop:

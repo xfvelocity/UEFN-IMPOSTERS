@@ -405,8 +405,8 @@ tasks_device := class(creative_device):
                 # Get players current stats
                 CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent]
             then:
-                PlayerStatsManager.RecordPlayerStat(Agent, StatType.TasksCompleted, 1.0)
-                Print("{CurrentPlayerStats.TasksCompleted + 1.0}")
+                PlayerStatsManager.RecordPlayerStat(Agent, StatType.TasksCompleted, 1)
+                Print("{CurrentPlayerStats.TasksCompleted + 1}")
 
     UpdateDownloadText(Text: text_block)<suspends>: void=
         var Index : int = 1

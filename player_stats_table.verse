@@ -2,13 +2,13 @@ using { /Verse.org/Simulation }
 using { /Fortnite.com/Devices }
 
 player_stats_table := class<final><persistable>:
-    Version: float = 0.0
-    Kills: float = 0.0
-    CrewmateWins: float = 0.0
-    ImposterWins: float = 0.0
-    ImposterPlays: float = 0.0
-    CrewmatePlays: float = 0.0
-    TasksCompleted: float = 0.0
+    Version: int = 0
+    Kills: int = 0
+    CrewmateWins: int = 0
+    ImposterWins: int = 0
+    ImposterPlays: int = 0
+    CrewmatePlays: int = 0
+    TasksCompleted: int = 0
 
 MakePlayerStatsTable<constructor>(OldTable: player_stats_table)<transacts> := player_stats_table:
     Version := OldTable.Version

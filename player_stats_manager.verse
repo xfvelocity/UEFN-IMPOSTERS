@@ -25,7 +25,7 @@ player_stats_manager := class():
         PlayerStats
 
     # Updates the players stats
-    RecordPlayerStat(Agent: agent, Stat: StatType, Value: float): void=
+    RecordPlayerStat(Agent: agent, Stat: StatType, Value: int): void=
         if:
             Player := player[Agent]
             PlayerStatsTable := PlayerStatsMap[Player]
