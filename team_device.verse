@@ -48,12 +48,8 @@ team_device := class(creative_device):
                 CrewmateClassSelector.ChangeTeam(Agent)
                 CrewmateHudDevice.Show(Agent)   
 
-                if:
-                    CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent]
-                then:
-                    PlayerStatsManager.RecordPlayerStat(Agent, StatType.CrewmatePlays, 1)
-                    Print("{CurrentPlayerStats.CrewmatePlays + 1}")
-                    
+                PlayerStatsManager.RecordPlayerStat(Agent, StatType.CrewmatePlays, 1)
+
         # Once the cooldown is up, allow the player to eliminate
         Sleep(EliminateCooldown)
 
@@ -66,11 +62,7 @@ team_device := class(creative_device):
             then:
                 CanEliminateClassSelector.ChangeClass(Agent)
 
-                if:
-                    CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent]
-                then:
-                    PlayerStatsManager.RecordPlayerStat(Agent, StatType.ImposterPlays, 1)
-                    Print("{CurrentPlayerStats.ImposterPlays + 1}")
+                PlayerStatsManager.RecordPlayerStat(Agent, StatType.ImposterPlays, 1)
 
     SetCooldown(Agent: agent)<suspends>: void=
         Sleep(EliminateCooldown)

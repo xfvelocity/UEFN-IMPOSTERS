@@ -107,6 +107,7 @@ tasks_device := class(creative_device):
     WeaponsShooting: weapons_task = weapons_task{}
 
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
+
     var CustomPlayers: [player]custom_player = map{}
     var DownloadTaskComplete: logic = false
     var PlayerTasksCanvas: [agent]task_ui = map{}
@@ -117,8 +118,8 @@ tasks_device := class(creative_device):
     var TargetsHit: [agent]int = map{}
 
     TaskList: [int][]Task = map{
-        10 => array{Task.AdminSwipe, Task.ElectricalSwipe, Task.ElectricalCalibration, Task.LowerEngineSwipe, Task.WeaponsShooting}
-        11 => array{Task.AdminSwipe, Task.ElectricalSwipe, Task.ElectricalCalibration, Task.LowerEngineSwipe, Task.WeaponsShooting}
+        10 => array{Task.AdminSwipe}
+        11 => array{Task.AdminSwipe}
     }
 
     OnBegin<override>()<suspends>:void=
@@ -127,7 +128,7 @@ tasks_device := class(creative_device):
                 PlayerManager.PlayersSet.Await()
                 set CustomPlayers = PlayerManager.CustomPlayers
 
-        set TotalTasksAmount = CustomPlayers.Length * 5.0
+        set TotalTasksAmount = CustomPlayers.Length * 1.0
 
         AssignTasks()
         TasksUI()
@@ -321,7 +322,7 @@ tasks_device := class(creative_device):
 
                         set Slots += array{
                             canvas_slot:
-                                Anchors :=  anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 0.0, Y := 0.0}}
+                                Anchors := anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 0.0, Y := 0.0}}
                                 Offsets := margin{Left := 35.0, Top := 90.0 + (TextBlockIndex * 40.0), Right := 0.0, Bottom := 0.0}
                                 Alignment := vector2{X := 0.0, Y := 0.0}
                                 ZOrder := 1
@@ -400,6 +401,12 @@ tasks_device := class(creative_device):
                 TaskPercentage := Round[(TotalTasksCompleted / TotalTasksAmount) * 100]
             then:
                 SelectedTotalTaskText.SetText(StringToMessage("Total Tasks Completed: {TaskPercentage}%"))
+
+                if(TaskPercentage = 100):
+                    for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
+                        if(GameManager := game_manager_device[CreativeObject]):
+                            spawn:
+                                GameManager.HandleEndGame(true)
 
             if:
                 # Get players current stats

@@ -6,6 +6,8 @@ using { /Fortnite.com/Game }
 using { /UnrealEngine.com/Temporary/SpatialMath }
 using { /Verse.org/Simulation/Tags }
 
+GameManagerTag := class(tag):
+
 emergency_button_tag := class(tag):
 
 voting_device_tag := class(tag):
@@ -44,6 +46,16 @@ game_manager_device := class(creative_device):
     FollowProps: []follow_prop = array{}
     @editable
     ReportProps: []report_prop = array{}
+    @editable
+    EndgameCamera: gameplay_camera_fixed_point_device = gameplay_camera_fixed_point_device{}
+    @editable
+    SequencerDevice: cinematic_sequence_device = cinematic_sequence_device{}
+    @editable
+    VictoryHudDevice: hud_message_device = hud_message_device{}
+    @editable
+    DefeatHudDevice: hud_message_device = hud_message_device{}
+    @editable
+    EndGameDevice: end_game_device = end_game_device{}
 
     var CustomPlayers: [player]custom_player = map{}
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
@@ -166,6 +178,56 @@ game_manager_device := class(creative_device):
 
             CustomPlayer.FollowProps.EliminateButton.Disable()
 
+    HandleEndGame(CrewmateWin: logic)<suspends>: void=
+        var PlayerIndex: int = 1
+
+        for (Player -> CustomPlayer : CustomPlayers):
+            if:
+                Character := Player.GetFortCharacter[]
+                NewAgent := Character.GetAgent[]
+            then:
+                if(CustomPlayer.IsImposter = true):
+                    if:
+                        CrewmateWin = false    
+                        Character.TeleportTo[
+                            vector3{X := 3160.0 + (PlayerIndex * 80.0), Y := -14360.0 - (PlayerIndex * 20.0), Z := 0.0}, 
+                            MakeRotation(vector3{X := 0.0, Y := 0.0, Z := 0.0}, 0.0)
+                        ]
+                    then:
+                        PlayerStatsManager.RecordPlayerStat(NewAgent, StatType.ImposterWins, 1)
+                        Character.PutInStasis(stasis_args{})
+                        VictoryHudDevice.Show(NewAgent)
+                        set PlayerIndex += 1
+                    else:
+                        DefeatHudDevice.Show(NewAgent)
+                else:
+                    if:
+                        CrewmateWin = true
+                        Character.TeleportTo[
+                            vector3{X := 3160.0 + (PlayerIndex * 80.0), Y := -14360.0 - (PlayerIndex * 20.0), Z := 0.0}, 
+                            MakeRotation(vector3{X := 0.0, Y := 0.0, Z := 0.0}, 0.0)
+                        ]
+                    then:
+                        PlayerStatsManager.RecordPlayerStat(NewAgent, StatType.CrewmateWins, 1)
+                        Character.PutInStasis(stasis_args{})
+                        VictoryHudDevice.Show(NewAgent)
+                        set PlayerIndex += 1
+                    else:
+                        DefeatHudDevice.Show(NewAgent)
+
+        SequencerDevice.Play()
+
+        EndgameCamera.AddToAll()
+
+        Sleep(5.0)
+
+        for (Player -> CustomPlayer : CustomPlayers):
+            if:
+                Character := Player.GetFortCharacter[]
+                Agent := Character.GetAgent[]
+            then:
+                EndGameDevice.Activate(Agent)
+    
     Reported(Agent: agent): void=
         AudioPlayer.Play()
 

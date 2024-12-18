@@ -281,13 +281,13 @@ voting_device := class(creative_device):
             var Index: int = 0;
 
             set Slots += array{
-                canvas_slot:
-                    Anchors :=  anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 1.0}}
-                    Offsets := margin{Left := 0.0, Top := 0.0, Right := 0.0, Bottom := 0.0}
-                    Alignment := vector2{X := 0.0, Y := 0.0}
-                    ZOrder := 0
-                    SizeToContent := false
-                    Widget := BackdropImage
+                # canvas_slot:
+                #     Anchors :=  anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 1.0}}
+                #     Offsets := margin{Left := 0.0, Top := 0.0, Right := 0.0, Bottom := 0.0}
+                #     Alignment := vector2{X := 0.0, Y := 0.0}
+                #     ZOrder := 0
+                #     SizeToContent := false
+                #     Widget := BackdropImage
                 canvas_slot:
                     Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
                     Offsets := margin{Left := 800.0, Top := -470.0, Right := 52.0, Bottom := 32.0}
