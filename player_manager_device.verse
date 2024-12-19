@@ -39,6 +39,7 @@ player_manager_device := class(creative_device):
     var PlayersSet: event() = event(){}
     var PlayersCount: int = 0
     var StatsUICanvas: [agent]canvas = map{}
+    var GameHasStarted: logic = false
 
     OnBegin<override>()<suspends>: void=
         Button.InteractedWithEvent.Subscribe(ManualOverride)
@@ -51,6 +52,7 @@ player_manager_device := class(creative_device):
     ManualOverride(Agent: agent): void=
         StartTimerDevice.SetActiveDuration(3.0)
         StartTimerDevice.ResumeForAll()
+
     StatsUI(Agent: agent) :void=
         if(StatsUICanvas[Agent]):
         else:
@@ -121,6 +123,13 @@ player_manager_device := class(creative_device):
         if(PlayersCount < 5):
             StartTimerDevice.ResetForAll()
 
+        for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
+            if:
+                GameManager := game_manager_device[CreativeObject]
+                GameHasStarted = true
+            then:
+                GameManager.CheckIfImpostersWon()
+
     OnStartGame(MaybeAgent: ?agent): void=
         set Players = GetPlayspace().GetPlayers()
 
@@ -141,12 +150,10 @@ player_manager_device := class(creative_device):
                     Character.GetTransform().Rotation
                 ]
             then:
-                Print("Firing 1")
-
                 set PlayerIndex += 1
 
                 if(CurrentCanvas := StatsUICanvas[NewAgent]):
-                    Print("Firing 2")
                     PlayerUI.RemoveWidget(CurrentCanvas)
 
         PlayersSet.Signal()
+        set GameHasStarted = true

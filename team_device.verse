@@ -24,6 +24,7 @@ team_device := class(creative_device):
 
     var CustomPlayers: [player]custom_player = map{}
     var Players: []player = array{}
+    var ImpostersCount: int = 0
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
 
     OnBegin<override>()<suspends>:void=
@@ -93,6 +94,7 @@ team_device := class(creative_device):
                 SetImposter(Player)
 
     SetImposters(): void=
+        set ImpostersCount = 1
         Value: int = GetRandomInt(0, Players.Length - 1)
 
         if:
@@ -101,4 +103,5 @@ team_device := class(creative_device):
             SetImposter(Player)
 
         if(Players.Length >= 5):
+            set ImpostersCount = 2
             SetSecondImposter()

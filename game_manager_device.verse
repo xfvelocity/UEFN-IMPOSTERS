@@ -6,6 +6,8 @@ using { /Fortnite.com/Game }
 using { /UnrealEngine.com/Temporary/SpatialMath }
 using { /Verse.org/Simulation/Tags }
 
+IsOdd(X: int)<decides><transacts>:void = (Mod[X, 2] <> 0)
+
 GameManagerTag := class(tag):
 
 emergency_button_tag := class(tag):
@@ -56,6 +58,10 @@ game_manager_device := class(creative_device):
     DefeatHudDevice: hud_message_device = hud_message_device{}
     @editable
     EndGameDevice: end_game_device = end_game_device{}
+    @editable
+    ImposterVictorySound: audio_player_device = audio_player_device{}
+    @editable
+    CremwateVictorySound: audio_player_device = audio_player_device{}
 
     var CustomPlayers: [player]custom_player = map{}
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
@@ -101,6 +107,37 @@ game_manager_device := class(creative_device):
             
                     set PropsIndex += 1 
 
+    CheckIfImpostersWon(): void=
+        var SurvivingCrewmates: int = 0
+        var SurvivingImposters: int = 0
+
+        for(CustomPlayer : CustomPlayers):
+            if(CustomPlayer.IsDead = false):
+                if(CustomPlayer.IsImposter = true):
+                    set SurvivingImposters += 1
+                else:
+                    set SurvivingCrewmates += 1
+
+        if:
+            SurvivingImposters = 1
+            SurvivingCrewmates = 1
+        then:
+            spawn:
+                HandleEndGame(false)
+
+        if:
+            SurvivingImposters = 2
+            SurvivingCrewmates = 2
+        then:
+            spawn:
+                HandleEndGame(false)
+        
+        if:
+            SurvivingImposters = 0
+        then:
+            spawn:
+                HandleEndGame(true)
+
     EliminatePlayer(EliminatedAgent: agent, EliminatingAgent: agent): void=
         if:
             Player := player[EliminatedAgent]
@@ -122,7 +159,6 @@ game_manager_device := class(creative_device):
             for (Player -> CustomPlayer : CustomPlayers):
                 if:
                     CustomPlayer.IsImposter = false
-
                     FortCharacter := Player.GetFortCharacter[]
                 then:
                     if(CustomPlayer.FollowProps.MoveableProp.TeleportTo[
@@ -147,6 +183,8 @@ game_manager_device := class(creative_device):
         
         if(Agent := FortCharacter.GetAgent[]):
             ResetImposterCooldown(Agent)
+
+        CheckIfImpostersWon()
 
     ResetImposterCooldown(Agent: agent): void=
         for(CreativeObject : FindCreativeObjectsWithTag(team_device_tag{})):
@@ -179,7 +217,14 @@ game_manager_device := class(creative_device):
             CustomPlayer.FollowProps.EliminateButton.Disable()
 
     HandleEndGame(CrewmateWin: logic)<suspends>: void=
+        Sleep(1.0)
+
         var PlayerIndex: int = 1
+
+        if(CrewmateWin = true):
+            CremwateVictorySound.Play();
+        else:
+            ImposterVictorySound.Play();
 
         for (Player -> CustomPlayer : CustomPlayers):
             if:
@@ -189,11 +234,9 @@ game_manager_device := class(creative_device):
                 if(CustomPlayer.IsImposter = true):
                     if:
                         CrewmateWin = false    
-                        Character.TeleportTo[
-                            vector3{X := 3160.0 + (PlayerIndex * 80.0), Y := -14360.0 - (PlayerIndex * 20.0), Z := 0.0}, 
-                            MakeRotation(vector3{X := 0.0, Y := 0.0, Z := 0.0}, 0.0)
-                        ]
                     then:
+                        HandleEndGamePlayers(Player, PlayerIndex)
+
                         PlayerStatsManager.RecordPlayerStat(NewAgent, StatType.ImposterWins, 1)
                         Character.PutInStasis(stasis_args{})
                         VictoryHudDevice.Show(NewAgent)
@@ -203,11 +246,9 @@ game_manager_device := class(creative_device):
                 else:
                     if:
                         CrewmateWin = true
-                        Character.TeleportTo[
-                            vector3{X := 3160.0 + (PlayerIndex * 80.0), Y := -14360.0 - (PlayerIndex * 20.0), Z := 0.0}, 
-                            MakeRotation(vector3{X := 0.0, Y := 0.0, Z := 0.0}, 0.0)
-                        ]
                     then:
+                        HandleEndGamePlayers(Player, PlayerIndex)
+                        
                         PlayerStatsManager.RecordPlayerStat(NewAgent, StatType.CrewmateWins, 1)
                         Character.PutInStasis(stasis_args{})
                         VictoryHudDevice.Show(NewAgent)
@@ -219,7 +260,7 @@ game_manager_device := class(creative_device):
 
         EndgameCamera.AddToAll()
 
-        Sleep(5.0)
+        Sleep(7.5)
 
         for (Player -> CustomPlayer : CustomPlayers):
             if:
@@ -228,6 +269,26 @@ game_manager_device := class(creative_device):
             then:
                 EndGameDevice.Activate(Agent)
     
+    HandleEndGamePlayers(Player: player, PlayerIndex: int): void=
+        var IndexOffset: int = 0                     
+        CenterLocation: vector3 = vector3{X := 3584.0, Y := -14240.0, Z := 0.0} 
+
+        if:
+            Character := Player.GetFortCharacter[]
+        then:
+            var PlayerOffset: float = 20.0 * IndexOffset
+
+            # Alternate placement logic based on index
+            var TeleportPosition: vector3 = vector3{X := 0.0, Y := 0.0, Z := 0.0} 
+
+            if(IsOdd[PlayerIndex]):
+                set TeleportPosition = vector3{X := CenterLocation.X - PlayerOffset, Y := CenterLocation.Y, Z := 0.0}  
+            else:
+                set TeleportPosition = vector3{X := CenterLocation.X + PlayerOffset, Y := CenterLocation.Y, Z := 0.0} 
+                set IndexOffset += 1
+
+            if(Character.TeleportTo[TeleportPosition, MakeRotation(vector3{X := 0.0, Y := 0.0, Z := 0.0}, 0.0)]):
+
     Reported(Agent: agent): void=
         AudioPlayer.Play()
 
