@@ -66,7 +66,7 @@ card_swipe := class<concrete>:
     @editable
     Button: button_device = button_device{}
     @editable
-    Tracker: tracker_device = tracker_device{}
+    SkilledInteractionDevice: skilled_interaction_device = skilled_interaction_device{}
 
 card_swipes := class<concrete>:
     @editable
@@ -84,7 +84,9 @@ weapons_task := class<concrete>:
     @editable
     MutatorZone: mutator_zone_device = mutator_zone_device{}
     @editable
-    Targets: []shooting_range_target_track_device = array{}
+    Targets: []shooting_range_target_device = array{}
+    @editable
+    Tracker: tracker_device = tracker_device{}
     
 player_class := class<concrete>:
     @editable 
@@ -130,9 +132,50 @@ tasks_device := class(creative_device):
 
         set TotalTasksAmount = CustomPlayers.Length * 1.0
 
+        Print("Total Tasks Amount: {TotalTasksAmount}")
+
         AssignTasks()
         TasksUI()
         TotalTaskUI()
+        SetListeners()
+
+    SetListeners()<suspends>: void=
+        # Admin Download
+        Downloads.AdminDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.AdminDownload}.DownloadTask)
+            
+        # Communications Download
+        Downloads.CommunicationsDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.CommunicationsDownload}.DownloadTask)
+
+        # Caffeteria Download
+        Downloads.CaffeteriaDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.CaffeteriaDownload}.DownloadTask)
+
+        # Weapons Download
+        Downloads.WeaponsDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.WeaponsDownload}.DownloadTask)
+
+        #  Navigation Download
+        Downloads.NavDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.NavDownload}.DownloadTask)
+
+        # Electric Download
+        Downloads.ElectricalDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.ElectricalDownload}.DownloadTask)
+
+        # Admin Swipe
+        Swipes.AdminSwipe.SkilledInteractionDevice.InteractionSucceededEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.AdminSwipe}.SwipeTask)
+
+        # Electrical Swipe
+        Swipes.ElectricalSwipe.SkilledInteractionDevice.InteractionSucceededEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.ElectricalSwipe}.SwipeTask)
+
+        # Electrical Calibrate
+        Swipes.ElectricalCalibration.SkilledInteractionDevice.InteractionSucceededEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.ElectricalCalibration}.SwipeTask)
+
+        # Lower Engine Swipe
+        Swipes.LowerEngineSwipe.SkilledInteractionDevice.InteractionSucceededEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.LowerEngineSwipe}.SwipeTask)
+
+        # Navigation Swipe
+        Swipes.NavigationSwipe.SkilledInteractionDevice.InteractionSucceededEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.NavigationSwipe}.SwipeTask)
+
+        # Weapons Shooting
+        # for(Target : WeaponsShooting.Targets):
+            # HandleTargetHit(Agent)
 
     AssignTasks(): void=
         for (Player -> CustomPlayer : CustomPlayers):
@@ -163,75 +206,62 @@ tasks_device := class(creative_device):
                         if:
                             SelectedTask = Task.AdminDownload
                             MapIndicator.TeleportTo[Downloads.AdminDownload.GetTransform()]
-                            Downloads.AdminDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.AdminDownload}.DownloadTask)
                             
                         # Communications Download
                         if:
                             SelectedTask = Task.CommunicationsDownload
                             MapIndicator.TeleportTo[Downloads.CommunicationsDownload.GetTransform()]
-                            Downloads.CommunicationsDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.CommunicationsDownload}.DownloadTask)
 
                         # Caffeteria Download
                         if:
                             SelectedTask = Task.CaffeteriaDownload
                             MapIndicator.TeleportTo[Downloads.CaffeteriaDownload.GetTransform()]
-                            Downloads.CaffeteriaDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.CaffeteriaDownload}.DownloadTask)
 
                         # Weapons Download
                         if:
                             SelectedTask = Task.WeaponsDownload
                             MapIndicator.TeleportTo[Downloads.WeaponsDownload.GetTransform()]
-                            Downloads.WeaponsDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.WeaponsDownload}.DownloadTask)
 
                         #  Navigation Download
                         if:
                             SelectedTask = Task.NavDownload
                             MapIndicator.TeleportTo[Downloads.NavDownload.GetTransform()]
-                            Downloads.NavDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.NavDownload}.DownloadTask)
 
                         # Electric Download
                         if:
                             SelectedTask = Task.ElectricalDownload
                             MapIndicator.TeleportTo[Downloads.ElectricalDownload.GetTransform()]
-                            Downloads.ElectricalDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.ElectricalDownload}.DownloadTask)
 
                         # Admin Swipe
                         if:
                             SelectedTask = Task.AdminSwipe
                             MapIndicator.TeleportTo[Swipes.AdminSwipe.Button.GetTransform()]
-                            Swipes.AdminSwipe.Tracker.CompleteEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.AdminSwipe}.SwipeTask)
 
                         # Electrical Swipe
                         if:
                             SelectedTask = Task.ElectricalSwipe
                             MapIndicator.TeleportTo[Swipes.ElectricalSwipe.Button.GetTransform()]
-                            Swipes.ElectricalSwipe.Tracker.CompleteEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.ElectricalSwipe}.SwipeTask)
 
                         # Electrical Calibrate
                         if:
                             SelectedTask = Task.ElectricalCalibration
                             MapIndicator.TeleportTo[Swipes.ElectricalCalibration.Button.GetTransform()]
-                            Swipes.ElectricalCalibration.Tracker.CompleteEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.ElectricalCalibration}.SwipeTask)
 
                         # Lower Engine Swipe
                         if:
                             SelectedTask = Task.LowerEngineSwipe
                             MapIndicator.TeleportTo[Swipes.LowerEngineSwipe.Button.GetTransform()]
-                            Swipes.LowerEngineSwipe.Tracker.CompleteEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.LowerEngineSwipe}.SwipeTask)
 
                         # Navigation Swipe
                         if:
                             SelectedTask = Task.NavigationSwipe
                             MapIndicator.TeleportTo[Swipes.NavigationSwipe.Button.GetTransform()]
-                            Swipes.NavigationSwipe.Tracker.CompleteEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.NavigationSwipe}.SwipeTask)
 
                         # Weapons Shooting
                         if:
                             SelectedTask = Task.WeaponsShooting
                             MapIndicator.TeleportTo[WeaponsShooting.MutatorZone.GetTransform()]
-                        then:
-                            for (Target : WeaponsShooting.Targets):
-                                Target.HitEvent.Subscribe(TargetHitHandler{Device := Self, Agent := Agent}.HitTask)
+
 
     HandleTargetHit(Agent: agent): void=
         if:
@@ -251,6 +281,8 @@ tasks_device := class(creative_device):
 
             if(SelectedTargetsHit + 1 = 20):
                 OnTaskComplete(Agent, Task.WeaponsShooting)
+                
+        WeaponsShooting.Tracker.Reset(Agent)
 
     HandleSwipeTask(Agent: agent, SelectedTask: Task): void=
         OnTaskComplete(Agent, SelectedTask)
@@ -379,6 +411,9 @@ tasks_device := class(creative_device):
             OnTaskComplete(Agent, SelectedTask)
 
     OnTaskComplete(Agent: agent, SelectedTask: Task): void=
+        var TasksPercentage: int = 0
+        Print(AgentToMessage(Agent, ""))
+
         if:
             Player := player[Agent]
 
@@ -390,8 +425,6 @@ tasks_device := class(creative_device):
 
             CustomPlayer := CustomPlayers[Player]
             set CustomPlayer.Tasks.TaskList[SelectedTask] = true
-
-            SelectedTotalTaskText := TotalTasksText[Agent]
         then:
             SelectedTextBlock.SetTextColor(Green)
             SelectedMapIndicator.Disable()
@@ -400,20 +433,26 @@ tasks_device := class(creative_device):
                 set TotalTasksCompleted += 1.0
                 TaskPercentage := Round[(TotalTasksCompleted / TotalTasksAmount) * 100]
             then:
-                SelectedTotalTaskText.SetText(StringToMessage("Total Tasks Completed: {TaskPercentage}%"))
+                set TasksPercentage = TaskPercentage
 
-                if(TaskPercentage = 100):
+                if(TasksPercentage = 100):
                     for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
                         if(GameManager := game_manager_device[CreativeObject]):
                             spawn:
                                 GameManager.HandleEndGame(true)
 
             if:
-                # Get players current stats
                 CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent]
             then:
                 PlayerStatsManager.RecordPlayerStat(Agent, StatType.TasksCompleted, 1)
-                Print("{CurrentPlayerStats.TasksCompleted + 1}")
+
+        for(Player -> CustomPlayer : CustomPlayers):
+            if:
+                FortCharacter := Player.GetFortCharacter[]
+                PlayerAgent := FortCharacter.GetAgent[]
+                SelectedTotalTaskText := TotalTasksText[PlayerAgent]
+            then:
+                SelectedTotalTaskText.SetText(StringToMessage("Total Tasks Completed: {TasksPercentage}%"))
 
     UpdateDownloadText(Text: text_block)<suspends>: void=
         var Index : int = 1

@@ -214,6 +214,10 @@ voting_device := class(creative_device):
                 PlayerUI := GetPlayerUI[Player]
             then:
                 PlayerUI.RemoveWidget(CanvasItem.Canvas)
+
+        for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
+            if(GameManager := game_manager_device[CreativeObject]):
+                GameManager.CheckIfImpostersWon()
         
     SetUserAsVoted(Message: widget_message): void=
         if:

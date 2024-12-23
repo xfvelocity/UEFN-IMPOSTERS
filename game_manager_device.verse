@@ -146,11 +146,9 @@ game_manager_device := class(creative_device):
             FortCharacter.Damage(100000.0)
 
             if:
-                # Get players current stats
                 CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[EliminatingAgent]
             then:
                 PlayerStatsManager.RecordPlayerStat(EliminatingAgent, StatType.Kills, 1)
-                Print("{CurrentPlayerStats.Kills + 1}")
 
     HandleFollowProps()<suspends>: void=
         loop:
@@ -161,10 +159,10 @@ game_manager_device := class(creative_device):
                     CustomPlayer.IsImposter = false
                     FortCharacter := Player.GetFortCharacter[]
                 then:
-                    if(CustomPlayer.FollowProps.MoveableProp.TeleportTo[
-                        FortCharacter.GetTransform().Translation, 
-                        FortCharacter.GetTransform().Rotation
-                    ]):  
+                    # if(CustomPlayer.FollowProps.MoveableProp.TeleportTo[
+                    #     FortCharacter.GetTransform().Translation, 
+                    #     FortCharacter.GetTransform().Rotation
+                    # ]):  
 
     HandlePlayerElimination(EliminationResult: elimination_result): void=
         FortCharacter := EliminationResult.EliminatedCharacter
@@ -269,25 +267,20 @@ game_manager_device := class(creative_device):
             then:
                 EndGameDevice.Activate(Agent)
     
-    HandleEndGamePlayers(Player: player, PlayerIndex: int): void=
-        var IndexOffset: int = 0                     
-        CenterLocation: vector3 = vector3{X := 3584.0, Y := -14240.0, Z := 0.0} 
-
+    HandleEndGamePlayers(Player: player, PlayerIndex: int): void=        
         if:
             Character := Player.GetFortCharacter[]
         then:
-            var PlayerOffset: float = 20.0 * IndexOffset
-
-            # Alternate placement logic based on index
-            var TeleportPosition: vector3 = vector3{X := 0.0, Y := 0.0, Z := 0.0} 
+            var PlayerXOffset: float = 80.0 * PlayerIndex
+            var TeleportPosition: vector3 = vector3{X := 3584.0, Y := -14240.0, Z := 0.0} 
 
             if(IsOdd[PlayerIndex]):
-                set TeleportPosition = vector3{X := CenterLocation.X - PlayerOffset, Y := CenterLocation.Y, Z := 0.0}  
+                set TeleportPosition = vector3{X := TeleportPosition.X - PlayerXOffset, Y := TeleportPosition.Y, Z := 0.0}  
             else:
-                set TeleportPosition = vector3{X := CenterLocation.X + PlayerOffset, Y := CenterLocation.Y, Z := 0.0} 
-                set IndexOffset += 1
+                set TeleportPosition = vector3{X := TeleportPosition.X + PlayerXOffset, Y := TeleportPosition.Y, Z := 0.0} 
 
-            if(Character.TeleportTo[TeleportPosition, MakeRotation(vector3{X := 0.0, Y := 0.0, Z := 0.0}, 0.0)]):
+            if(Character.TeleportTo[TeleportPosition, MakeRotation(TeleportPosition, 0.0)]):
+                
 
     Reported(Agent: agent): void=
         AudioPlayer.Play()
