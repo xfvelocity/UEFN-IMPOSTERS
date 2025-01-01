@@ -9,12 +9,12 @@ using { /Fortnite.com/UI }
 using { /UnrealEngine.com/Temporary/SpatialMath }
 using { /Verse.org/Colors/NamedColors }
 
-TargetHitHandler := class:
-    Device: tasks_device   
-    Agent: agent
+# TargetHitHandler := class:
+#     Device: tasks_device   
+#     Agent: agent
 
-    HitTask(): void=
-        Device.HandleTargetHit(Agent)
+#     HitTask(): void=
+#         Device.HandleTargetHit(Agent)
 
 TaskHandler := class:
     Device: tasks_device   
@@ -31,26 +31,37 @@ task_ui := class<concrete>:
     var BackgroundImage: texture_block = texture_block{DefaultImage := Images.OpaqueBackground}
     var TextBlocks: [Task]text_block = map{}
 
-Task := enum{AdminDownload, CaffeteriaDownload, CommunicationsDownload, ElectricalDownload, NavDownload, WeaponsDownload, AdminSwipe, ElectricalSwipe, ElectricalCalibration, LowerEngineSwipe, NavigationSwipe, WeaponsShooting }
+Task := enum{AdminUpload, CaffeteriaDownload, CommunicationsDownload, ElectricalDownload, NavDownload, WeaponsDownload, AdminSwipe, ElectricalSwipe, ElectricalCalibration, LowerEngineSwipe, NavigationSwipe, WeaponsShooting, StorageFuel}
+
+FuelTask := enum{RefuelFirst, UpperEngine, RefuelSecond, LowerEngine}
 
 TaskString : [Task]string = map{
-    Task.AdminDownload => "Admin: Download",
-    Task.CaffeteriaDownload => "Caffeteria: Download",
-    Task.CommunicationsDownload => "Communications: Download",
-    Task.ElectricalDownload => "Electrical: Download",
-    Task.NavDownload => "Navigation: Download",
-    Task.WeaponsDownload => "Weapons: Download",
+    Task.AdminUpload => "Admin: Upload (1/2)",
+    Task.CaffeteriaDownload => "Caffeteria: Download (0/2)",
+    Task.CommunicationsDownload => "Communications: Download (0/2)",
+    Task.ElectricalDownload => "Electrical: Download (0/2)",
+    Task.NavDownload => "Navigation: Download (0/2)",
+    Task.WeaponsDownload => "Weapons: Download (0/2)",
     Task.AdminSwipe => "Admin: Swipe",
     Task.ElectricalSwipe => "Electrical: Swipe",
     Task.ElectricalCalibration => "Electrical: Calibration",
     Task.LowerEngineSwipe => "Lower Engine: Swipe",
     Task.NavigationSwipe => "Navigation: Swipe",
-    Task.WeaponsShooting => "Weapons: Shooting (0/20)"
+    Task.WeaponsShooting => "Weapons: Shooting (0/20)",
+    Task.StorageFuel => "Storage: Fuel (0/2)"
+}
+
+DownloadCombination: [Task]Task = map{
+    Task.CommunicationsDownload => Task.AdminUpload,
+    Task.CaffeteriaDownload => Task.AdminUpload,
+    Task.WeaponsDownload => Task.AdminUpload,
+    Task.NavDownload => Task.AdminUpload,
+    Task.ElectricalDownload => Task.AdminUpload
 }
 
 download_tasks := class<concrete>:
     @editable
-    AdminDownload: button_device = button_device{}
+    AdminUpload: button_device = button_device{}
     @editable
     CaffeteriaDownload: button_device = button_device{}
     @editable
@@ -84,9 +95,7 @@ weapons_task := class<concrete>:
     @editable
     MutatorZone: mutator_zone_device = mutator_zone_device{}
     @editable
-    Targets: []shooting_range_target_device = array{}
-    @editable
-    Tracker: tracker_device = tracker_device{}
+    Triggers: []trigger_device = array{}
     
 player_class := class<concrete>:
     @editable 
@@ -98,6 +107,14 @@ download_task := class<concrete>:
     @editable 
     Button: button_device = button_device{}
 
+fuel_task := class<concrete>:
+    @editable 
+    Refuel: button_device = button_device{}
+    @editable 
+    UpperEngine: button_device = button_device{}
+    @editable 
+    LowerEngine: button_device = button_device{}
+
 tasks_device := class(creative_device):
     @editable
     Downloads: download_tasks = download_tasks{}
@@ -107,6 +124,8 @@ tasks_device := class(creative_device):
     Swipes: card_swipes = card_swipes{}
     @editable
     WeaponsShooting: weapons_task = weapons_task{}
+    @editable
+    Fuel: fuel_task = fuel_task{}
 
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
 
@@ -118,10 +137,12 @@ tasks_device := class(creative_device):
     var TotalTasksCompleted: float = 0.0
     var TotalTasksAmount: float = 0.0
     var TargetsHit: [agent]int = map{}
+    var DownloadsCompleted: [agent][]Task = map{}
+    var CurrentFuelTask: FuelTask = FuelTask.RefuelFirst
 
     TaskList: [int][]Task = map{
-        10 => array{Task.AdminSwipe}
-        11 => array{Task.AdminSwipe}
+        10 => array{Task.StorageFuel, Task.CaffeteriaDownload, Task.ElectricalCalibration, Task.CommunicationsDownload},
+        11 => array{Task.AdminSwipe, Task.ElectricalSwipe, Task.CaffeteriaDownload, Task.LowerEngineSwipe, Task.StorageFuel}
     }
 
     OnBegin<override>()<suspends>:void=
@@ -130,18 +151,17 @@ tasks_device := class(creative_device):
                 PlayerManager.PlayersSet.Await()
                 set CustomPlayers = PlayerManager.CustomPlayers
 
-        set TotalTasksAmount = CustomPlayers.Length * 1.0
+                if(SelectedTaskItem := TaskList[10]):
+                    set TotalTasksAmount = CustomPlayers.Length * (SelectedTaskItem.Length * 1.0)
 
-        Print("Total Tasks Amount: {TotalTasksAmount}")
-
-        AssignTasks()
-        TasksUI()
-        TotalTaskUI()
-        SetListeners()
+                AssignTasks()
+                TasksUI()
+                TotalTaskUI()
+                SetListeners()
 
     SetListeners()<suspends>: void=
         # Admin Download
-        Downloads.AdminDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.AdminDownload}.DownloadTask)
+        Downloads.AdminUpload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.AdminUpload}.DownloadTask)
             
         # Communications Download
         Downloads.CommunicationsDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.CommunicationsDownload}.DownloadTask)
@@ -152,7 +172,7 @@ tasks_device := class(creative_device):
         # Weapons Download
         Downloads.WeaponsDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.WeaponsDownload}.DownloadTask)
 
-        #  Navigation Download
+        # Navigation Download
         Downloads.NavDownload.InteractedWithEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.NavDownload}.DownloadTask)
 
         # Electric Download
@@ -174,8 +194,14 @@ tasks_device := class(creative_device):
         Swipes.NavigationSwipe.SkilledInteractionDevice.InteractionSucceededEvent.Subscribe(TaskHandler{Device := Self, SelectedTask := Task.NavigationSwipe}.SwipeTask)
 
         # Weapons Shooting
-        # for(Target : WeaponsShooting.Targets):
-            # HandleTargetHit(Agent)
+        for(Trigger : WeaponsShooting.Triggers):
+            Trigger.TriggeredEvent.Subscribe(HandleTargetHit)
+
+        # Electric Download
+        Fuel.Refuel.InteractedWithEvent.Subscribe(HandleRefuelTask)
+        Fuel.LowerEngine.InteractedWithEvent.Subscribe(HandleLowerEngineFuelTask)
+        Fuel.UpperEngine.InteractedWithEvent.Subscribe(HandleUpperEngineFuelTask)
+
 
     AssignTasks(): void=
         for (Player -> CustomPlayer : CustomPlayers):
@@ -189,8 +215,8 @@ tasks_device := class(creative_device):
 
                 SelectedTasks := TaskList[RandomClassIndex]
                 set PlayerTasksMapIndicators[Agent] = map{}
-
             then:
+                set CustomPlayer.PlayerClass = RandomClassIndex - 10
                 PlayerClass.ClassSelector.ChangeClass(Agent)
 
                 for(Index -> SelectedTask : SelectedTasks):
@@ -202,11 +228,6 @@ tasks_device := class(creative_device):
                     then:
                         MapIndicator.Enable()
 
-                        # Admin Download
-                        if:
-                            SelectedTask = Task.AdminDownload
-                            MapIndicator.TeleportTo[Downloads.AdminDownload.GetTransform()]
-                            
                         # Communications Download
                         if:
                             SelectedTask = Task.CommunicationsDownload
@@ -262,34 +283,83 @@ tasks_device := class(creative_device):
                             SelectedTask = Task.WeaponsShooting
                             MapIndicator.TeleportTo[WeaponsShooting.MutatorZone.GetTransform()]
 
+                        # Fuel
+                        if:
+                            SelectedTask = Task.StorageFuel
+                            MapIndicator.TeleportTo[Fuel.Refuel.GetTransform()]
 
-    HandleTargetHit(Agent: agent): void=
-        if:
-            SelectedTargetsHit := TargetsHit[Agent]
-        else if(set TargetsHit[Agent] = 0):
-             
-        if:
-            SelectedTargetsHit := TargetsHit[Agent]
-            SelectedTargetsHit <> 20
 
-            set TargetsHit[Agent] += 1
-
-            SelectedCanvas := PlayerTasksCanvas[Agent]
-            SelectedTextBlock := SelectedCanvas.TextBlocks[Task.WeaponsShooting]
-        then:
-            SelectedTextBlock.SetText(StringToMessage("Weapons: Shooting ({SelectedTargetsHit + 1}/20)"))
-
-            if(SelectedTargetsHit + 1 = 20):
-                OnTaskComplete(Agent, Task.WeaponsShooting)
+    HandleTargetHit(MaybeAgent: ?agent): void=
+        if(Agent := agent[MaybeAgent?]):
+            if(SelectedTargetsHit := TargetsHit[Agent]):
+            else if(set TargetsHit[Agent] = 0):
                 
-        WeaponsShooting.Tracker.Reset(Agent)
+            if:
+                SelectedTargetsHit := TargetsHit[Agent]
+                SelectedTargetsHit <> 20
 
+                set TargetsHit[Agent] += 1
+
+                SelectedTextBlock := PlayerTasksCanvas[Agent].TextBlocks[Task.WeaponsShooting]
+            then:
+                SelectedTextBlock.SetText(StringToMessage("Weapons: Shooting ({SelectedTargetsHit + 1}/20)"))
+
+                if(SelectedTargetsHit + 1 = 20):
+                    OnTaskComplete(Agent, Task.WeaponsShooting)
+                
     HandleSwipeTask(Agent: agent, SelectedTask: Task): void=
         OnTaskComplete(Agent, SelectedTask)
 
+    HandleRefuelTask(Agent: agent): void=
+        if:
+            SelectedTextBlock := PlayerTasksCanvas[Agent].TextBlocks[Task.StorageFuel]
+            SelectedMapIndicator := PlayerTasksMapIndicators[Agent][Task.StorageFuel]
+        then:
+            SelectedTextBlock.SetTextColor(Yellow)
+
+            if(CurrentFuelTask = FuelTask.RefuelFirst):
+                set CurrentFuelTask = FuelTask.UpperEngine
+                SelectedTextBlock.SetText(StringToMessage("Upper Engine: Fuel (0/2)"))
+                
+                if(SelectedMapIndicator.TeleportTo[Fuel.UpperEngine.GetTransform()]):
+            else if(CurrentFuelTask = FuelTask.RefuelSecond):
+                set CurrentFuelTask = FuelTask.LowerEngine
+                SelectedTextBlock.SetText(StringToMessage("Lower Engine: Fuel (1/2)"))
+
+                if(SelectedMapIndicator.TeleportTo[Fuel.LowerEngine.GetTransform()]):
+
+    HandleUpperEngineFuelTask(Agent: agent): void=
+        if:
+            SelectedTextBlock := PlayerTasksCanvas[Agent].TextBlocks[Task.StorageFuel]
+            SelectedMapIndicator := PlayerTasksMapIndicators[Agent][Task.StorageFuel]
+        then:
+            if(CurrentFuelTask = FuelTask.UpperEngine):
+                set CurrentFuelTask = FuelTask.RefuelSecond
+                SelectedTextBlock.SetText(StringToMessage("Storage: Fuel (1/2)"))
+
+                if(SelectedMapIndicator.TeleportTo[Fuel.Refuel.GetTransform()]):
+
+    HandleLowerEngineFuelTask(Agent: agent): void=
+        if:
+            SelectedTextBlock := PlayerTasksCanvas[Agent].TextBlocks[Task.StorageFuel]
+            SelectedMapIndicator := PlayerTasksMapIndicators[Agent][Task.StorageFuel]
+        then:
+            if(CurrentFuelTask = FuelTask.LowerEngine):
+                SelectedTextBlock.SetText(StringToMessage("Lower Engine: Fuel (2/2)"))
+                OnTaskComplete(Agent, Task.StorageFuel)
+
+                SelectedMapIndicator.Disable()
+
     HandleDownloadTask(Agent: agent, SelectedTask: Task): void=
+        var IsUploading: logic = false
+
+        if(SelectedTask = Task.AdminUpload):
+            set IsUploading = true
+        else:
+            set IsUploading = false
+
         spawn:
-            OnDownload(Agent, SelectedTask)
+            OnDownload(Agent, SelectedTask, IsUploading)
 
     TotalTaskUI(): void=
         for(Player -> CustomPlayer : CustomPlayers):
@@ -369,7 +439,7 @@ tasks_device := class(creative_device):
 
                 PlayerUI.AddWidget(SelectedCanvas.Canvas)
 
-    OnDownload(Agent: agent, SelectedTask: Task)<suspends>: void=
+    OnDownload(Agent: agent, SelectedTask: Task, Uploading: logic)<suspends>: void=
         set DownloadTaskComplete = false
 
         if:
@@ -378,7 +448,12 @@ tasks_device := class(creative_device):
         then:
             var Canvas: canvas = canvas{}
             var BackgroundImage: texture_block = texture_block{DefaultImage := Images.TabletBackground}
-            var Text: text_block = text_block{DefaultText := StringToMessage("Downloading."), DefaultJustification := text_justification.Center}
+            var Text: text_block = text_block{DefaultJustification := text_justification.Center}
+
+            if(Uploading = true):
+                Text.SetText(StringToMessage("Uploading."))
+            else:
+                Text.SetText(StringToMessage("Downloading."))
 
             set Canvas = canvas:
                 Slots := array{
@@ -401,14 +476,46 @@ tasks_device := class(creative_device):
             PlayerUI.AddWidget(Canvas, player_ui_slot{InputMode := ui_input_mode.All})
 
             spawn:
-                UpdateDownloadText(Text)            
+                UpdateDownloadText(Text, Uploading)            
 
             Sleep(10.0)
 
             PlayerUI.RemoveWidget(Canvas)
             set DownloadTaskComplete = true
 
-            OnTaskComplete(Agent, SelectedTask)
+            if:
+                Uploading = true
+                SelectedDownloadTask := DownloadsCompleted[Agent][0]
+            then:
+                OnTaskComplete(Agent, SelectedDownloadTask)
+
+                if:
+                    NewArray := DownloadsCompleted[Agent].RemoveElement[0]
+                    set DownloadsCompleted[Agent] = NewArray
+
+                    SelectedTextBlock := PlayerTasksCanvas[Agent].TextBlocks[SelectedDownloadTask]
+                    SelectedMapIndicator := PlayerTasksMapIndicators[Agent][SelectedTask]
+                then:
+                    SelectedTextBlock.SetText(StringToMessage("Admin: Upload (2/2)"))
+
+                    if:
+                        DownloadsCompleted[Agent].Length > 0
+                    then:
+                        SelectedMapIndicator.Enable()
+            else if:
+                SelectedMapIndicator := PlayerTasksMapIndicators[Agent][SelectedTask]
+                SelectedTextBlock := PlayerTasksCanvas[Agent].TextBlocks[SelectedTask]
+
+                set DownloadsCompleted[Agent] = array{}
+                set DownloadsCompleted[Agent] += array{SelectedTask}
+            then:
+                SelectedTextBlock.SetText(StringToMessage("Admin: Upload (1/2)"))
+                SelectedTextBlock.SetTextColor(Yellow)
+
+                # Admin Download
+                if:
+                    SelectedMapIndicator.TeleportTo[Downloads.AdminUpload.GetTransform()]
+
 
     OnTaskComplete(Agent: agent, SelectedTask: Task): void=
         var TasksPercentage: int = 0
@@ -417,9 +524,7 @@ tasks_device := class(creative_device):
         if:
             Player := player[Agent]
 
-            SelectedCanvas := PlayerTasksCanvas[Agent]
-            SelectedTextBlock := SelectedCanvas.TextBlocks[SelectedTask]
-
+            SelectedTextBlock := PlayerTasksCanvas[Agent].TextBlocks[SelectedTask]
             SelectedTaskString := TaskString[SelectedTask]
             SelectedMapIndicator := PlayerTasksMapIndicators[Agent][SelectedTask]
 
@@ -454,13 +559,22 @@ tasks_device := class(creative_device):
             then:
                 SelectedTotalTaskText.SetText(StringToMessage("Total Tasks Completed: {TasksPercentage}%"))
 
-    UpdateDownloadText(Text: text_block)<suspends>: void=
+    UpdateDownloadText(Text: text_block, Uploading: logic)<suspends>: void=
         var Index : int = 1
-        var States : []string = array{
-            "Downloading.",
-            "Downloading..",
-            "Downloading..."
-        }
+        var States : []string = array{}
+
+        if(Uploading = true):
+            set States = array{
+                "Uploading.",
+                "Uploading..",
+                "Uploading..."
+            }
+        else: 
+            set States = array{
+                "Downloading.",
+                "Downloading..",
+                "Downloading..."
+            }
 
         loop:
             if(DownloadTaskComplete = true):

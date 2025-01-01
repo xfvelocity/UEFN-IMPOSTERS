@@ -21,6 +21,7 @@ custom_player := class<concrete>:
     var Tasks: tasks = tasks{}
     var IsImposter: logic = false
     var IsDead: logic = false
+    var PlayerClass: int = 0
 
 player_manager_device := class(creative_device):
     @editable

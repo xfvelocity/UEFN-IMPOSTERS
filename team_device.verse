@@ -35,10 +35,9 @@ team_device := class(creative_device):
                 set CustomPlayers = PlayerManager.CustomPlayers
                 set Players = PlayerManager.Players
         
-        # SetImposters();
+        SetImposters();
 
         for(Player -> CustomPlayer : CustomPlayers):
-
             if:
                 CustomPlayer.IsImposter = false
 
