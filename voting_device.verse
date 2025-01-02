@@ -38,7 +38,7 @@ voteable_player := class:
 
 voting_device := class(creative_device):
     @editable
-    TimerDuration: int = 5
+    TimerDuration: int = 30
 
     var Players: [agent]voteable_player = map{}
     var SkipVotes: int = 0
@@ -107,7 +107,7 @@ voting_device := class(creative_device):
             PlayerUI.RemoveWidget(VoteablePlayer.Canvas)
 
     InitializeTimerUI(VoteablePlayer: voteable_player):void=
-        VoteablePlayer.TimerText.SetText(StringToMessage("{TimerDuration}s"))
+        VoteablePlayer.TimerText.SetText(StringToMessage("Voting Time: {TimerDuration}s"))
         VoteablePlayer.TimerText.SetVisibility(widget_visibility.Visible)
 
     # Asynchronous function to handle the countdown.
@@ -125,7 +125,7 @@ voting_device := class(creative_device):
                     NewAgent := Character.GetAgent[]
                     VoteablePlayer := Players[NewAgent]
                 then:
-                    VoteablePlayer.TimerText.SetText(StringToMessage("{RemainingTime}s"))
+                    VoteablePlayer.TimerText.SetText(StringToMessage("Voting Time: {RemainingTime}s"))
 
             if(RemainingTime <= 0):
                 HandleVoteTotals()
@@ -252,7 +252,7 @@ voting_device := class(creative_device):
         var SkipButton: button_quiet = button_quiet{}
         var BackdropImage: texture_block = texture_block{DefaultImage := Images.TabletBackground}
 
-        TimerText.SetText(StringToMessage("{TimerDuration}s"))
+        TimerText.SetText(StringToMessage("Voting Time: {TimerDuration}s"))
         SkipButton.SetText(StringToMessage("Skip"))
         SkipButton.OnClick().Subscribe(HandleSkip)
 
@@ -285,23 +285,23 @@ voting_device := class(creative_device):
             var Index: int = 0;
 
             set Slots += array{
-                # canvas_slot:
-                #     Anchors :=  anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 1.0}}
-                #     Offsets := margin{Left := 0.0, Top := 0.0, Right := 0.0, Bottom := 0.0}
-                #     Alignment := vector2{X := 0.0, Y := 0.0}
-                #     ZOrder := 0
-                #     SizeToContent := false
-                #     Widget := BackdropImage
+                canvas_slot:
+                    Anchors :=  anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 1.0}}
+                    Offsets := margin{Left := 0.0, Top := 0.0, Right := 0.0, Bottom := 0.0}
+                    Alignment := vector2{X := 0.0, Y := 0.0}
+                    ZOrder := 0
+                    SizeToContent := false
+                    Widget := BackdropImage
                 canvas_slot:
                     Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
-                    Offsets := margin{Left := 800.0, Top := -470.0, Right := 52.0, Bottom := 32.0}
+                    Offsets := margin{Left := 560.0, Top := -465.0, Right := 52.0, Bottom := 32.0}
                     Alignment := vector2{X := 0.5, Y := 0.5}
                     ZOrder := 1
                     SizeToContent := false
                     Widget := TimerText
                 canvas_slot:
                     Anchors :=  anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
-                    Offsets := margin{Left := 0.0, Top := 385.0, Right := 420.0, Bottom := 65.0}
+                    Offsets := margin{Left := 0.0, Top := 320.0, Right := 250.0, Bottom := 65.0}
                     Alignment := vector2{X := 0.5, Y := 0.5}
                     ZOrder := 1
                     SizeToContent := false
@@ -310,15 +310,26 @@ voting_device := class(creative_device):
 
             # Buttons
             for(Key -> Value : Buttons):
-                set Slots += array{
-                    canvas_slot:
-                        Anchors :=  anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
-                        Offsets := margin{Left := 0.0, Top := -385.0 + (Index * 80.0), Right := 420.0, Bottom := 65.0}
-                        Alignment := vector2{X := 0.5, Y := 0.5}
-                        ZOrder := 1
-                        SizeToContent := false
-                        Widget := Value
-                }
+                if(IsOdd[Index]):
+                    set Slots += array{
+                        canvas_slot:
+                            Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+                            Offsets := margin{Left := 230.0, Top := -330.0 + (Index * 50.0), Right := 380.0, Bottom := 65.0}
+                            Alignment := vector2{X := 0.5, Y := 0.5}
+                            ZOrder := 1
+                            SizeToContent := false
+                            Widget := Value
+                    }
+                else:
+                    set Slots += array{
+                        canvas_slot:
+                            Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+                            Offsets := margin{Left := -200.0, Top := -330.0 + ((Index - 1) * 50.0), Right := 380.0, Bottom := 65.0}
+                            Alignment := vector2{X := 0.5, Y := 0.5}
+                            ZOrder := 1
+                            SizeToContent := false
+                            Widget := Value
+                    }
 
                 set Index += 1
 
@@ -326,15 +337,26 @@ voting_device := class(creative_device):
 
             # Voted Images
             for(Key -> Value : VotedImages):
-                set Slots += array{
-                    canvas_slot:
-                        Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
-                        Offsets := margin{Left := 200.0, Top := -415.0 + (Index * 80.0), Right := 50.0, Bottom := 50.0}
-                        Alignment := vector2{X := 0.5, Y := 0.5}
-                        ZOrder := 2
-                        SizeToContent := false
-                        Widget := Value
-                }
+                if(IsOdd[Index]):
+                    set Slots += array{
+                        canvas_slot:
+                            Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+                            Offsets := margin{Left := 400.0, Top := -350.0 + (Index * 50.0), Right := 50.0, Bottom := 50.0}
+                            Alignment := vector2{X := 0.5, Y := 0.5}
+                            ZOrder := 2
+                            SizeToContent := false
+                            Widget := Value
+                    }
+                else:
+                    set Slots += array{
+                        canvas_slot:
+                            Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+                            Offsets := margin{Left := -22.0, Top := -350.0 + ((Index - 1) * 50.0), Right := 50.0, Bottom := 50.0}
+                            Alignment := vector2{X := 0.5, Y := 0.5}
+                            ZOrder := 2
+                            SizeToContent := false
+                            Widget := Value
+                    }
 
                 set Index += 1
 
@@ -342,18 +364,28 @@ voting_device := class(creative_device):
             
             # Dead Images
             for(Key -> Value : DeadImages):
-                set Slots += array{
-                    canvas_slot:
-                        Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
-                        Offsets := margin{Left := -5.0, Top := -385.0 + (Index * 80.0), Right := 260.0, Bottom := 3.0}
-                        Alignment := vector2{X := 0.5, Y := 0.5}
-                        ZOrder := 2
-                        SizeToContent := false
-                        Widget := Value
+                if(IsOdd[Index]):
+                    set Slots += array{
+                        canvas_slot:
+                            Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+                            Offsets := margin{Left := 230.0, Top := -330.0 + (Index * 50.0), Right := 260.0, Bottom := 3.0}
+                            Alignment := vector2{X := 0.5, Y := 0.5}
+                            ZOrder := 1
+                            SizeToContent := false
+                            Widget := Value
+                    }
+                else:
+                    set Slots += array{
+                        canvas_slot:
+                            Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+                            Offsets := margin{Left := -200.0, Top := -330.0 + ((Index - 1) * 50.0), Right := 260.0, Bottom := 3.0}
+                            Alignment := vector2{X := 0.5, Y := 0.5}
+                            ZOrder := 1
+                            SizeToContent := false
+                            Widget := Value
                     }
 
                 set Index += 1
 
-   
         # Create the main UI canvas
         return canvas{ Slots := Slots }
