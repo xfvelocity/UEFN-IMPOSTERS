@@ -86,7 +86,7 @@ vent_device := class(creative_device):
             Player := player[Agent]
             FortCharacter := Player.GetFortCharacter[]
 
-            FortCharacter.TeleportTo[vector3{X := 540.0, Y := -1580.0, Z := 820.0}, FortCharacter.GetTransform().Rotation]
+            FortCharacter.TeleportTo[vector3{X := -10720.0, Y := -33850.0, Z := 2310.0}, FortCharacter.GetTransform().Rotation]
             
         set CurrentCameraIndex = ButtonIndex
         set SelectedVentCopy = Vent

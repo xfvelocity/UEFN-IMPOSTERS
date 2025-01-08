@@ -37,12 +37,11 @@ voteable_player := class:
     var BackdropImage: texture_block = texture_block{DefaultImage := Images.TabletBackground}
 
 voting_device := class(creative_device):
-    @editable
-    TimerDuration: int = 30
-
     var Players: [agent]voteable_player = map{}
     var SkipVotes: int = 0
     var VoteSkipped: logic = false
+    var VotedUsersCount: int = 0
+    var TimerDuration: int = 60
 
     OnBegin<override>()<suspends>:void=
         for (Player : GetPlayspace().GetPlayers()):
@@ -77,6 +76,11 @@ voting_device := class(creative_device):
                      # If the player has voted, update the voted image
                     if(VoteablePlayer := Players[VotedImagesKey], VoteablePlayer.HasVoted = true):
                         VotedImagesValue.SetImage(InImage := Images.Voted)
+                        set VotedUsersCount += 1
+
+            if(VotedUsersCount = Players.Length):
+                spawn:
+                    HandleVoteTotals()
                 
     AddUI(Agent: agent): void=
         spawn:
@@ -144,6 +148,7 @@ voting_device := class(creative_device):
                 for(VotedImagesKey -> VotedImagesValue : Value.VotedImages):
                     VotedImagesValue.SetImage(InImage := Images.BlankImage)
 
+        set TimerDuration = 0
         Sleep(3.0)
 
         SetResultsUI()
@@ -231,12 +236,18 @@ voting_device := class(creative_device):
             set CurrentPlayer.HasVoted = true
 
             # Loop through the playrs
-            for(Key -> Value : Players):
+            for(Agent -> VoteablePlayer : Players):
                 # Looped through the empty voted images
-                for(VotedImagesKey -> VotedImagesValue : Value.VotedImages):
+                for(VotedImagesKey -> VotedImagesValue : VoteablePlayer.VotedImages):
                      # If the player has voted, update the voted image
-                    if(VoteablePlayer := Players[VotedImagesKey], VoteablePlayer.HasVoted = true):
+                    if(VotedPlayer := Players[VotedImagesKey], VotedPlayer.HasVoted = true):
                         VotedImagesValue.SetImage(InImage := Images.Voted)
+                        set VotedUsersCount += 1
+
+            if(VotedUsersCount = Players.Length):
+                spawn:
+                    HandleVoteTotals()
+
 
     HandleSkip(Message: widget_message): void=
         set SkipVotes += 1

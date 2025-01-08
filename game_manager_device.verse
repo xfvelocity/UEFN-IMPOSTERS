@@ -208,7 +208,7 @@ game_manager_device := class(creative_device):
             Translation := FortCharacter.GetTransform().Translation
 
             if(CustomPlayer.ReportProps.MoveableProp.TeleportTo[
-                vector3{X := Translation.X, Y := Translation.Y, Z := 0.0}, 
+                vector3{X := Translation.X, Y := Translation.Y, Z := 1536.0}, 
                 FortCharacter.GetTransform().Rotation
             ]):  
 
@@ -272,12 +272,12 @@ game_manager_device := class(creative_device):
             Character := Player.GetFortCharacter[]
         then:
             var PlayerXOffset: float = 80.0 * PlayerIndex
-            var TeleportPosition: vector3 = vector3{X := 3584.0, Y := -14240.0, Z := 0.0} 
+            var TeleportPosition: vector3 = vector3{X := -7310.0, Y := -33960.0, Z := 1550.0} 
 
             if(IsOdd[PlayerIndex]):
-                set TeleportPosition = vector3{X := TeleportPosition.X - PlayerXOffset, Y := TeleportPosition.Y, Z := 0.0}  
+                set TeleportPosition = vector3{X := TeleportPosition.X - PlayerXOffset, Y := TeleportPosition.Y, Z := TeleportPosition.Z}  
             else:
-                set TeleportPosition = vector3{X := TeleportPosition.X + PlayerXOffset, Y := TeleportPosition.Y, Z := 0.0} 
+                set TeleportPosition = vector3{X := TeleportPosition.X + PlayerXOffset, Y := TeleportPosition.Y, Z := TeleportPosition.Z} 
 
             if(Character.TeleportTo[TeleportPosition, MakeRotation(TeleportPosition, 0.0)]):
                 
@@ -303,7 +303,7 @@ game_manager_device := class(creative_device):
                         Translation := VotingTable.GetTransform().Translation
 
                         Character.TeleportTo[
-                            vector3{X := Translation.X + (PlayerIndex * 100.0), Y := Translation.Y + (PlayerIndex * 100.0), Z := 0.0}, 
+                            vector3{X := Translation.X + (PlayerIndex * 100.0), Y := Translation.Y + (PlayerIndex * 100.0), Z := Translation.Z}, 
                             Character.GetTransform().Rotation
                         ]
                     then:

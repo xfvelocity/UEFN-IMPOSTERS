@@ -140,10 +140,15 @@ tasks_device := class(creative_device):
     var DownloadsCompleted: [agent][]Task = map{}
     var CurrentFuelTask: FuelTask = FuelTask.RefuelFirst
 
+    # TaskList: [int][]Task = map{
+    #     10 => array{Task.StorageFuel, Task.CaffeteriaDownload, Task.ElectricalCalibration, Task.CommunicationsDownload},
+    #     11 => array{Task.AdminSwipe, Task.ElectricalSwipe, Task.CaffeteriaDownload, Task.LowerEngineSwipe, Task.StorageFuel}
+    # }
     TaskList: [int][]Task = map{
-        10 => array{Task.StorageFuel, Task.CaffeteriaDownload, Task.ElectricalCalibration, Task.CommunicationsDownload},
-        11 => array{Task.AdminSwipe, Task.ElectricalSwipe, Task.CaffeteriaDownload, Task.LowerEngineSwipe, Task.StorageFuel}
+        10 => array{Task.AdminSwipe},
+        11 => array{Task.AdminSwipe}
     }
+
 
     OnBegin<override>()<suspends>:void=
         for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
