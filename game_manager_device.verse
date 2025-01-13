@@ -5,6 +5,9 @@ using { /Fortnite.com/Characters }
 using { /Fortnite.com/Game }
 using { /UnrealEngine.com/Temporary/SpatialMath }
 using { /Verse.org/Simulation/Tags }
+using { /UnrealEngine.com/Temporary/UI }
+using { /Fortnite.com/UI }
+using { /Verse.org/Colors/NamedColors }
 
 IsOdd(X: int)<decides><transacts>:void = (Mod[X, 2] <> 0)
 
@@ -64,23 +67,106 @@ game_manager_device := class(creative_device):
     CremwateVictorySound: audio_player_device = audio_player_device{}
 
     var CustomPlayers: [player]custom_player = map{}
+    var GameEnded: event() = event(){}
+    var HasUsedEmergency: [agent]logic = map{}
+    var EmergencyButtonCooldownComplete: logic = false
+    var TimerDuration: int = 15
+    var EmergencyButtonText: [agent]text_block = map{}
+    var EmergencyButtonCanvas: [agent]canvas = map{}
+
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
-   
+
     OnBegin<override>()<suspends>:void=
         for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
             if(PlayerManager := player_manager_device[CreativeObject]):
                 PlayerManager.PlayersSet.Await()
                 set CustomPlayers = PlayerManager.CustomPlayers
 
-        EmergencyButton.InteractedWithEvent.Subscribe(Reported)
+                spawn:
+                    AsyncCountdown()
+
+        EmergencyButton.InteractedWithEvent.Subscribe(EmergencyButtonPressed)
 
         # Setup elimination watchers for players
         for (Player -> CustomPlayer : CustomPlayers):
-            if (Character := Player.GetFortCharacter[]):
+            if:
+                Character := Player.GetFortCharacter[]
+                Agent := Character.GetAgent[]
+
+                set HasUsedEmergency[Agent] = false
+            then:
                 Character.EliminatedEvent().Subscribe(HandlePlayerElimination)
 
         SetupProps()
         HandleFollowProps()
+
+    EmergencyButtonPressed(Agent: agent): void=
+        if:
+            Player := player[Agent]
+            PlayerUI := GetPlayerUI[Player]
+        then:
+            if(HasUsedEmergency[Agent] = false and EmergencyButtonCooldownComplete = true):
+                if:
+                    set HasUsedEmergency[Agent] = true
+                    SelectedEmergencyButtonCanvas := EmergencyButtonCanvas[Agent]
+                then:
+                    PlayerUI.RemoveWidget(SelectedEmergencyButtonCanvas)
+
+                Reported(Agent)
+            else:
+                if(SelectedEmergencyButtonCanvas := EmergencyButtonCanvas[Agent]):
+                    PlayerUI.RemoveWidget(SelectedEmergencyButtonCanvas)
+
+                TextBlock := text_block{DefaultJustification := text_justification.Center, DefaultTextColor := White}
+
+                if(HasUsedEmergency[Agent] = true):
+                    TextBlock.SetText(StringToMessage("You have already used the emergency button!"))
+    
+                if(set EmergencyButtonText[Agent] = TextBlock):
+    
+                var Canvas: canvas = canvas:
+                    Slots := array{
+                        canvas_slot:
+                            Anchors :=  anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+                            Offsets := margin{Left := 0.0, Top := 450.0, Right := 0.0, Bottom := 0.0}
+                            Alignment := vector2{X := 0.5, Y := 0.5}
+                            ZOrder := 1
+                            SizeToContent := false
+                            Widget := TextBlock
+                    }
+
+                if(set EmergencyButtonCanvas[Agent] = Canvas):    
+                    PlayerUI.AddWidget(Canvas)
+
+    AsyncCountdown()<suspends>:void=
+        var RemainingTime: int = TimerDuration
+
+        loop:
+            for (Player : GetPlayspace().GetPlayers()):
+                if:
+                    Character := Player.GetFortCharacter[]
+                    Agent := Character.GetAgent[]
+                    SelectedEmergencyButtonText := EmergencyButtonText[Agent]
+                then:
+                    SelectedEmergencyButtonText.SetText(StringToMessage("Button is on cooldown: {RemainingTime}s"))
+
+            Sleep(1.0)
+            set RemainingTime = RemainingTime - 1
+
+            if(RemainingTime <= 0):
+                set EmergencyButtonCooldownComplete = true
+
+                for (Player : GetPlayspace().GetPlayers()):
+                    if:
+                        Character := Player.GetFortCharacter[]
+                        Agent := Character.GetAgent[]
+                        PlayerUI := GetPlayerUI[Player]
+    
+                        SelectedEmergencyButtonCanvas := EmergencyButtonCanvas[Agent]
+                    then:
+                        PlayerUI.RemoveWidget(SelectedEmergencyButtonCanvas)
+
+                break;
 
     SetupProps(): void=
         var PropsIndex: int = 0
@@ -254,6 +340,7 @@ game_manager_device := class(creative_device):
                     else:
                         DefeatHudDevice.Show(NewAgent)
 
+        GameEnded.Signal()
         SequencerDevice.Play()
 
         EndgameCamera.AddToAll()
@@ -271,7 +358,7 @@ game_manager_device := class(creative_device):
         if:
             Character := Player.GetFortCharacter[]
         then:
-            var PlayerXOffset: float = 80.0 * PlayerIndex
+            var PlayerXOffset: float = 50.0 * PlayerIndex
             var TeleportPosition: vector3 = vector3{X := -7310.0, Y := -33960.0, Z := 1550.0} 
 
             if(IsOdd[PlayerIndex]):

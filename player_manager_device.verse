@@ -147,7 +147,7 @@ player_manager_device := class(creative_device):
                 Translation := VotingTable.GetTransform().Translation
 
                 Character.TeleportTo[
-                    vector3{X := Translation.X + (PlayerIndex * 200.0), Y := Translation.Y + (PlayerIndex * 200.0), Z := Translation.Z}, 
+                    vector3{X := Translation.X + (PlayerIndex * 100.0), Y := Translation.Y + (PlayerIndex * 100.0), Z := Translation.Z},
                     Character.GetTransform().Rotation
                 ]
             then:

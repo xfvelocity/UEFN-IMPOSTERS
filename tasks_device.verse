@@ -140,15 +140,10 @@ tasks_device := class(creative_device):
     var DownloadsCompleted: [agent][]Task = map{}
     var CurrentFuelTask: FuelTask = FuelTask.RefuelFirst
 
-    # TaskList: [int][]Task = map{
-    #     10 => array{Task.StorageFuel, Task.CaffeteriaDownload, Task.ElectricalCalibration, Task.CommunicationsDownload},
-    #     11 => array{Task.AdminSwipe, Task.ElectricalSwipe, Task.CaffeteriaDownload, Task.LowerEngineSwipe, Task.StorageFuel}
-    # }
     TaskList: [int][]Task = map{
-        10 => array{Task.AdminSwipe},
-        11 => array{Task.AdminSwipe}
+        10 => array{Task.StorageFuel, Task.CaffeteriaDownload, Task.ElectricalCalibration, Task.CommunicationsDownload},
+        11 => array{Task.AdminSwipe, Task.ElectricalSwipe, Task.CaffeteriaDownload, Task.LowerEngineSwipe, Task.StorageFuel}
     }
-
 
     OnBegin<override>()<suspends>:void=
         for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
@@ -159,9 +154,12 @@ tasks_device := class(creative_device):
                 if(SelectedTaskItem := TaskList[10]):
                     set TotalTasksAmount = CustomPlayers.Length * (SelectedTaskItem.Length * 1.0)
 
+                
                 AssignTasks()
-                TasksUI()
-                TotalTaskUI()
+                spawn:
+                    TasksUI()
+                spawn:
+                    TotalTaskUI()
                 SetListeners()
 
     SetListeners()<suspends>: void=
@@ -207,8 +205,12 @@ tasks_device := class(creative_device):
         Fuel.LowerEngine.InteractedWithEvent.Subscribe(HandleLowerEngineFuelTask)
         Fuel.UpperEngine.InteractedWithEvent.Subscribe(HandleUpperEngineFuelTask)
 
-
     AssignTasks(): void=
+        # Disable all map indicators
+        for (PlayerClass : PlayerClasses):
+            for(Index -> MapIndicator : PlayerClass.MapIndictators):
+                MapIndicator.Disable()
+
         for (Player -> CustomPlayer : CustomPlayers):
             RandomClassIndex: int = GetRandomInt(10, TaskList.Length + 9)
 
@@ -366,7 +368,7 @@ tasks_device := class(creative_device):
         spawn:
             OnDownload(Agent, SelectedTask, IsUploading)
 
-    TotalTaskUI(): void=
+    TotalTaskUI()<suspends>: void=
         for(Player -> CustomPlayer : CustomPlayers):
             if:
                 FortCharacter := Player.GetFortCharacter[]
@@ -391,7 +393,12 @@ tasks_device := class(creative_device):
 
                 PlayerUI.AddWidget(Canvas)
 
-    TasksUI(): void=
+                for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
+                    if(GameManager := game_manager_device[CreativeObject]):
+                        GameManager.GameEnded.Await()
+                        PlayerUI.RemoveWidget(Canvas)
+
+    TasksUI()<suspends>: void=
         for(Player -> CustomPlayer : CustomPlayers):
             if:
                 CustomPlayer.IsImposter = false
@@ -443,6 +450,11 @@ tasks_device := class(creative_device):
                 set SelectedCanvas.Canvas = canvas{ Slots := Slots }
 
                 PlayerUI.AddWidget(SelectedCanvas.Canvas)
+
+                for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
+                    if(GameManager := game_manager_device[CreativeObject]):
+                        GameManager.GameEnded.Await()
+                        PlayerUI.RemoveWidget(SelectedCanvas.Canvas)
 
     OnDownload(Agent: agent, SelectedTask: Task, Uploading: logic)<suspends>: void=
         set DownloadTaskComplete = false
