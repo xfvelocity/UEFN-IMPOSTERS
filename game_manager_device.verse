@@ -70,7 +70,7 @@ game_manager_device := class(creative_device):
     var GameEnded: event() = event(){}
     var HasUsedEmergency: [agent]logic = map{}
     var EmergencyButtonCooldownComplete: logic = false
-    var TimerDuration: int = 15
+    var TimerDuration: int = 60
     var EmergencyButtonText: [agent]text_block = map{}
     var EmergencyButtonCanvas: [agent]canvas = map{}
 
@@ -137,6 +137,15 @@ game_manager_device := class(creative_device):
 
                 if(set EmergencyButtonCanvas[Agent] = Canvas):    
                     PlayerUI.AddWidget(Canvas)
+
+                spawn:
+                    RemoveEmergencyButtonUI(PlayerUI, Canvas)
+
+
+    RemoveEmergencyButtonUI(PlayerUI: player_ui, Canvas: canvas)<suspends>: void=
+        Sleep(3.0)
+
+        PlayerUI.RemoveWidget(Canvas)
 
     AsyncCountdown()<suspends>:void=
         var RemainingTime: int = TimerDuration

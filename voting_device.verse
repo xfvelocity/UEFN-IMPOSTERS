@@ -136,6 +136,9 @@ voting_device := class(creative_device):
                 then:
                     VoteablePlayer.TimerText.SetText(StringToMessage("Voting Time: {RemainingTime}s"))
 
+            if(TimerDuration = 0):
+                break;
+
             if(RemainingTime <= 0):
                 HandleVoteTotals()
                     
@@ -154,6 +157,8 @@ voting_device := class(creative_device):
                     VotedImagesValue.SetImage(InImage := Images.BlankImage)
 
         set TimerDuration = 0
+        set VotedUsersCount = 0
+
         Sleep(3.0)
 
         SetResultsUI()
