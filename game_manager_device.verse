@@ -73,6 +73,8 @@ game_manager_device := class(creative_device):
     var TimerDuration: int = 60
     var EmergencyButtonText: [agent]text_block = map{}
     var EmergencyButtonCanvas: [agent]canvas = map{}
+    var EliminationCooldown: [agent]int = map{}
+    var EliminationCooldownText: [agent]text_block = map{}
 
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
 
@@ -92,13 +94,63 @@ game_manager_device := class(creative_device):
             if:
                 Character := Player.GetFortCharacter[]
                 Agent := Character.GetAgent[]
+                PlayerUI := GetPlayerUI[Player]
 
                 set HasUsedEmergency[Agent] = false
             then:
                 Character.EliminatedEvent().Subscribe(HandlePlayerElimination)
 
+                if:
+                    CustomPlayer.IsImposter = true
+                    set EliminationCooldown[Agent] = 15
+                then:
+                    TextBlock := text_block{DefaultJustification := text_justification.Center, DefaultTextColor := White}
+                    Icon := texture_block{DefaultImage := Images.EliminationCooldownActive}
+                    TextBlock.SetText(StringToMessage("15s"))
+
+                    if(set EliminationCooldownText[Agent] = TextBlock):
+        
+                    var Canvas: canvas = canvas:
+                        Slots := array{
+                            canvas_slot:
+                                Anchors :=  anchors{Minimum := vector2{X := 1.0, Y := 0.5}, Maximum := vector2{X := 1.0, Y := 0.5}}
+                                Offsets := margin{Left := -80.0, Top := 180.0, Right := 50.0, Bottom := 50.0}
+                                Alignment := vector2{X := 0.5, Y := 0.5}
+                                ZOrder := 1
+                                SizeToContent := false
+                                Widget := Icon
+                            canvas_slot:
+                                Anchors :=  anchors{Minimum := vector2{X := 1.0, Y := 0.5}, Maximum := vector2{X := 1.0, Y := 0.5}}
+                                Offsets := margin{Left := -80.0, Top := 210.0, Right := 0.0, Bottom := 0.0}
+                                Alignment := vector2{X := 0.5, Y := 0.5}
+                                ZOrder := 1
+                                SizeToContent := false
+                                Widget := TextBlock
+                        }
+    
+                    PlayerUI.AddWidget(Canvas)
+
+                    spawn:
+                        EliminationCooldownTimer(Agent)
+
         SetupProps()
         HandleFollowProps()
+
+    EliminationCooldownTimer(Agent: agent)<suspends>: void=
+        if(Cooldown := EliminationCooldown[Agent]):
+            var RemainingTime: int = Cooldown
+
+            loop:
+                # Wait for 1 second.
+                Sleep(1.0)
+                set RemainingTime = RemainingTime - 1 
+
+                if(set EliminationCooldown[Agent] = RemainingTime):
+                if(CooldownText := EliminationCooldownText[Agent]):
+                    CooldownText.SetText(StringToMessage("{RemainingTime}s"))
+    
+                if(RemainingTime <= 0):
+                    break; 
 
     EmergencyButtonPressed(Agent: agent): void=
         if:
@@ -148,7 +200,7 @@ game_manager_device := class(creative_device):
         PlayerUI.RemoveWidget(Canvas)
 
     AsyncCountdown()<suspends>:void=
-        var RemainingTime: int = TimerDuration
+        var RemainingTime: int = 15
 
         loop:
             for (Player : GetPlayspace().GetPlayers()):
@@ -179,7 +231,7 @@ game_manager_device := class(creative_device):
 
     SetupProps(): void=
         var PropsIndex: int = 0
-        
+
         for (CreativeObject : Self.FindCreativeObjectsWithTag(team_device_tag{})):
             for (Player -> CustomPlayer : CustomPlayers):
                 if:
@@ -204,46 +256,55 @@ game_manager_device := class(creative_device):
 
     CheckIfImpostersWon(): void=
         var SurvivingCrewmates: int = 0
-        var SurvivingImposters: int = 0
+        # var SurvivingImposters: int = 0
 
-        for(CustomPlayer : CustomPlayers):
-            if(CustomPlayer.IsDead = false):
-                if(CustomPlayer.IsImposter = true):
-                    set SurvivingImposters += 1
-                else:
-                    set SurvivingCrewmates += 1
+        # for(CustomPlayer : CustomPlayers):
+        #     if(CustomPlayer.IsDead = false):
+        #         if(CustomPlayer.IsImposter = true):
+        #             set SurvivingImposters += 1
+        #         else:
+        #             set SurvivingCrewmates += 1
 
-        if:
-            SurvivingImposters = 1
-            SurvivingCrewmates = 1
-        then:
-            spawn:
-                HandleEndGame(false)
+        # if:
+        #     SurvivingImposters = 1
+        #     SurvivingCrewmates = 1
+        # then:
+        #     spawn:
+        #         HandleEndGame(false)
 
-        if:
-            SurvivingImposters = 2
-            SurvivingCrewmates = 2
-        then:
-            spawn:
-                HandleEndGame(false)
+        # if:
+        #     SurvivingImposters = 2
+        #     SurvivingCrewmates = 2
+        # then:
+        #     spawn:
+        #         HandleEndGame(false)
         
-        if:
-            SurvivingImposters = 0
-        then:
-            spawn:
-                HandleEndGame(true)
+        # if:
+        #     SurvivingImposters = 0
+        # then:
+        #     spawn:
+        #         HandleEndGame(true)
 
     EliminatePlayer(EliminatedAgent: agent, EliminatingAgent: agent): void=
-        if:
-            Player := player[EliminatedAgent]
-            FortCharacter := Player.GetFortCharacter[]
-        then:
-            FortCharacter.Damage(100000.0)
-
+        if(EliminationCooldown[EliminatingAgent] = 0):
             if:
-                CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[EliminatingAgent]
+                Player := player[EliminatedAgent]
+                FortCharacter := Player.GetFortCharacter[]
             then:
-                PlayerStatsManager.RecordPlayerStat(EliminatingAgent, StatType.Kills, 1)
+                FortCharacter.Damage(100000.0)
+
+                if:
+                    CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[EliminatingAgent]
+                then:
+                    PlayerStatsManager.RecordPlayerStat(EliminatingAgent, StatType.Kills, 1)
+
+                if(set EliminationCooldown[EliminatingAgent] = 15):
+                    spawn:
+                        EliminationCooldownTimer(EliminatingAgent)
+
+        else:
+            Print("Cooldown not complete")
+
 
     HandleFollowProps()<suspends>: void=
         loop:
@@ -254,10 +315,10 @@ game_manager_device := class(creative_device):
                     CustomPlayer.IsImposter = false
                     FortCharacter := Player.GetFortCharacter[]
                 then:
-                    # if(CustomPlayer.FollowProps.MoveableProp.TeleportTo[
-                    #     FortCharacter.GetTransform().Translation, 
-                    #     FortCharacter.GetTransform().Rotation
-                    # ]):  
+                    if(CustomPlayer.FollowProps.MoveableProp.TeleportTo[
+                        FortCharacter.GetTransform().Translation, 
+                        FortCharacter.GetTransform().Rotation
+                    ]):  
 
     HandlePlayerElimination(EliminationResult: elimination_result): void=
         FortCharacter := EliminationResult.EliminatedCharacter
@@ -303,7 +364,7 @@ game_manager_device := class(creative_device):
             Translation := FortCharacter.GetTransform().Translation
 
             if(CustomPlayer.ReportProps.MoveableProp.TeleportTo[
-                vector3{X := Translation.X, Y := Translation.Y, Z := 1536.0}, 
+                vector3{X := Translation.X, Y := Translation.Y, Z := 1548.0}, 
                 FortCharacter.GetTransform().Rotation
             ]):  
 
