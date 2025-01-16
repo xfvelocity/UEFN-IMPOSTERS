@@ -9,6 +9,10 @@ using { /UnrealEngine.com/Temporary/UI }
 using { /Fortnite.com/UI }
 using { /Verse.org/Colors/NamedColors }
 
+ValueEliminationCooldown: int = 22
+ValueEmergencyButtonCooldown: int = 15
+ValueVotingTime: int = 60
+
 IsOdd(X: int)<decides><transacts>:void = (Mod[X, 2] <> 0)
 
 GameManagerTag := class(tag):
@@ -70,7 +74,6 @@ game_manager_device := class(creative_device):
     var GameEnded: event() = event(){}
     var HasUsedEmergency: [agent]logic = map{}
     var EmergencyButtonCooldownComplete: logic = false
-    var TimerDuration: int = 60
     var EmergencyButtonText: [agent]text_block = map{}
     var EmergencyButtonCanvas: [agent]canvas = map{}
     var EliminationCooldown: [agent]int = map{}
@@ -102,11 +105,11 @@ game_manager_device := class(creative_device):
 
                 if:
                     CustomPlayer.IsImposter = true
-                    set EliminationCooldown[Agent] = 15
+                    set EliminationCooldown[Agent] = ValueEliminationCooldown
                 then:
                     TextBlock := text_block{DefaultJustification := text_justification.Center, DefaultTextColor := White}
                     Icon := texture_block{DefaultImage := Images.EliminationCooldownActive}
-                    TextBlock.SetText(StringToMessage("15s"))
+                    TextBlock.SetText(StringToMessage("{ValueEliminationCooldown}s"))
 
                     if(set EliminationCooldownText[Agent] = TextBlock):
         
@@ -200,7 +203,7 @@ game_manager_device := class(creative_device):
         PlayerUI.RemoveWidget(Canvas)
 
     AsyncCountdown()<suspends>:void=
-        var RemainingTime: int = 15
+        var RemainingTime: int = ValueEmergencyButtonCooldown
 
         loop:
             for (Player : GetPlayspace().GetPlayers()):
@@ -256,34 +259,34 @@ game_manager_device := class(creative_device):
 
     CheckIfImpostersWon(): void=
         var SurvivingCrewmates: int = 0
-        # var SurvivingImposters: int = 0
+        var SurvivingImposters: int = 0
 
-        # for(CustomPlayer : CustomPlayers):
-        #     if(CustomPlayer.IsDead = false):
-        #         if(CustomPlayer.IsImposter = true):
-        #             set SurvivingImposters += 1
-        #         else:
-        #             set SurvivingCrewmates += 1
+        for(CustomPlayer : CustomPlayers):
+            if(CustomPlayer.IsDead = false):
+                if(CustomPlayer.IsImposter = true):
+                    set SurvivingImposters += 1
+                else:
+                    set SurvivingCrewmates += 1
 
-        # if:
-        #     SurvivingImposters = 1
-        #     SurvivingCrewmates = 1
-        # then:
-        #     spawn:
-        #         HandleEndGame(false)
+        if:
+            SurvivingImposters = 1
+            SurvivingCrewmates = 1
+        then:
+            spawn:
+                HandleEndGame(false)
 
-        # if:
-        #     SurvivingImposters = 2
-        #     SurvivingCrewmates = 2
-        # then:
-        #     spawn:
-        #         HandleEndGame(false)
+        if:
+            SurvivingImposters = 2
+            SurvivingCrewmates = 2
+        then:
+            spawn:
+                HandleEndGame(false)
         
-        # if:
-        #     SurvivingImposters = 0
-        # then:
-        #     spawn:
-        #         HandleEndGame(true)
+        if:
+            SurvivingImposters = 0
+        then:
+            spawn:
+                HandleEndGame(true)
 
     EliminatePlayer(EliminatedAgent: agent, EliminatingAgent: agent): void=
         if(EliminationCooldown[EliminatingAgent] = 0):
@@ -298,7 +301,7 @@ game_manager_device := class(creative_device):
                 then:
                     PlayerStatsManager.RecordPlayerStat(EliminatingAgent, StatType.Kills, 1)
 
-                if(set EliminationCooldown[EliminatingAgent] = 15):
+                if(set EliminationCooldown[EliminatingAgent] = ValueEliminationCooldown):
                     spawn:
                         EliminationCooldownTimer(EliminatingAgent)
 

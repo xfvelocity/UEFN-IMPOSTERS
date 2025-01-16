@@ -9,13 +9,6 @@ using { /Fortnite.com/UI }
 using { /UnrealEngine.com/Temporary/SpatialMath }
 using { /Verse.org/Colors/NamedColors }
 
-# TargetHitHandler := class:
-#     Device: tasks_device   
-#     Agent: agent
-
-#     HitTask(): void=
-#         Device.HandleTargetHit(Agent)
-
 TaskHandler := class:
     Device: tasks_device   
     SelectedTask: Task
@@ -141,8 +134,8 @@ tasks_device := class(creative_device):
     var CurrentFuelTask: FuelTask = FuelTask.RefuelFirst
 
     TaskList: [int][]Task = map{
-        10 => array{Task.StorageFuel, Task.CaffeteriaDownload, Task.ElectricalCalibration, Task.CommunicationsDownload},
-        11 => array{Task.AdminSwipe, Task.ElectricalSwipe, Task.CaffeteriaDownload, Task.LowerEngineSwipe, Task.StorageFuel}
+        10 => array{Task.AdminSwipe, Task.StorageFuel, Task.CommunicationsDownload, Task.ElectricalCalibration, Task.NavDownload, Task.WeaponsShooting},
+        11 => array{Task.AdminSwipe, Task.ElectricalSwipe, Task.CaffeteriaDownload, Task.LowerEngineSwipe, Task.StorageFuel, Task.WeaponsShooting}
     }
 
     OnBegin<override>()<suspends>:void=

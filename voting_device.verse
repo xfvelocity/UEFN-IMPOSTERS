@@ -41,7 +41,7 @@ voting_device := class(creative_device):
     var SkipVotes: int = 0
     var VoteSkipped: logic = false
     var VotedUsersCount: int = 0
-    var TimerDuration: int = 15
+    var TimerDuration: int = ValueVotingTime
 
     OnBegin<override>()<suspends>:void=
         for (Player : GetPlayspace().GetPlayers()):
@@ -232,12 +232,17 @@ voting_device := class(creative_device):
 
         set VotedUsersCount = 0;
         set SkipVotes = 0;
-        set TimerDuration = 60;
+        set TimerDuration = ValueVotingTime;
 
         for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
             if(GameManager := game_manager_device[CreativeObject]):
                 GameManager.CheckIfImpostersWon()
-        
+                
+                for(Key -> Value : GameManager.EliminationCooldown):
+                    if(set GameManager.EliminationCooldown[Key] = ValueEliminationCooldown):
+                        spawn:
+                            GameManager.EliminationCooldownTimer(Key)
+
     SetUserAsVoted(Message: widget_message): void=
         if:
             # Get the current player from the players array and set them as voted
