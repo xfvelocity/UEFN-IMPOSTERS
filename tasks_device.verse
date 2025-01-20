@@ -72,6 +72,35 @@ card_swipe := class<concrete>:
     @editable
     SkilledInteractionDevice: skilled_interaction_device = skilled_interaction_device{}
 
+analytics_devices := class<concrete>:
+    @editable
+    AdminUpload: analytics_device = analytics_device{}
+    @editable
+    CaffeteriaDownload: analytics_device = analytics_device{}
+    @editable
+    CommunicationsDownload: analytics_device = analytics_device{}
+    @editable
+    ElectricalDownload: analytics_device = analytics_device{}
+    @editable
+    NavDownload: analytics_device = analytics_device{}
+    @editable
+    WeaponsDownload: analytics_device = analytics_device{}
+    @editable
+    AdminSwipe: analytics_device = analytics_device{}
+    @editable
+    ElectricalSwipe: analytics_device = analytics_device{}
+    @editable
+    ElectricalCalibration: analytics_device = analytics_device{}
+    @editable
+    LowerEngineSwipe: analytics_device = analytics_device{}
+    @editable
+    NavigationSwipe: analytics_device = analytics_device{}
+    @editable
+    StorageFuel: analytics_device = analytics_device{}
+    @editable
+    WeaponsShooting: analytics_device = analytics_device{}
+
+
 card_swipes := class<concrete>:
     @editable
     AdminSwipe: card_swipe = card_swipe{}
@@ -119,6 +148,10 @@ tasks_device := class(creative_device):
     WeaponsShooting: weapons_task = weapons_task{}
     @editable
     Fuel: fuel_task = fuel_task{}
+    @editable
+    TaskAccolade: accolades_device = accolades_device{}
+    @editable
+    AnalyticDevices: analytics_devices = analytics_devices{}
 
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
 
@@ -530,6 +563,33 @@ tasks_device := class(creative_device):
     OnTaskComplete(Agent: agent, SelectedTask: Task): void=
         var TasksPercentage: int = 0
 
+        if(SelectedTask = Task.AdminUpload):
+            AnalyticDevices.AdminUpload.Submit(Agent)
+        else if(SelectedTask = Task.CaffeteriaDownload):
+            AnalyticDevices.CaffeteriaDownload.Submit(Agent)
+        else if(SelectedTask = Task.CommunicationsDownload):
+            AnalyticDevices.CommunicationsDownload.Submit(Agent)
+        else if(SelectedTask = Task.ElectricalDownload):
+            AnalyticDevices.ElectricalDownload.Submit(Agent)
+        else if(SelectedTask = Task.NavDownload):
+            AnalyticDevices.NavDownload.Submit(Agent)
+        else if(SelectedTask = Task.WeaponsDownload):
+            AnalyticDevices.WeaponsDownload.Submit(Agent)
+        else if(SelectedTask = Task.AdminSwipe):
+            AnalyticDevices.AdminSwipe.Submit(Agent)
+        else if(SelectedTask = Task.ElectricalSwipe):
+            AnalyticDevices.ElectricalSwipe.Submit(Agent)
+        else if(SelectedTask = Task.ElectricalCalibration):
+            AnalyticDevices.ElectricalCalibration.Submit(Agent)
+        else if(SelectedTask = Task.LowerEngineSwipe):
+            AnalyticDevices.LowerEngineSwipe.Submit(Agent)
+        else if(SelectedTask = Task.NavigationSwipe):
+            AnalyticDevices.NavigationSwipe.Submit(Agent)
+        else if(SelectedTask = Task.WeaponsShooting):
+            AnalyticDevices.WeaponsShooting.Submit(Agent)
+        else if(SelectedTask = Task.StorageFuel):
+            AnalyticDevices.StorageFuel.Submit(Agent)
+
         if:
             Player := player[Agent]
 
@@ -542,6 +602,8 @@ tasks_device := class(creative_device):
         then:
             SelectedTextBlock.SetTextColor(Green)
             SelectedMapIndicator.Disable()
+
+            TaskAccolade.Award(Agent)
 
             if:
                 set TotalTasksCompleted += 1.0

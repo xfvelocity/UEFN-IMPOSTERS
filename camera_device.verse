@@ -20,6 +20,8 @@ camera_device := class(creative_device):
     EscapeTrigger: input_trigger_device = input_trigger_device{}
     @editable
     PostProcess: post_process_device = post_process_device{}
+    @editable
+    CameraAnalytic: analytics_device = analytics_device{}
 
     var CurrentCameraIndex: int = 0
     var UIText: [agent]text_block = map{}
@@ -47,6 +49,7 @@ camera_device := class(creative_device):
         EscapeTrigger.Enable()
         PostProcess.BlendIn(Agent)
         SetupUI(Agent)
+        CameraAnalytic.Submit(Agent)
 
         ChangeCamera(Agent)
 

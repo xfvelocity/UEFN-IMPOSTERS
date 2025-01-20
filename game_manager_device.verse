@@ -69,6 +69,16 @@ game_manager_device := class(creative_device):
     ImposterVictorySound: audio_player_device = audio_player_device{}
     @editable
     CremwateVictorySound: audio_player_device = audio_player_device{}
+    @editable
+    EliminationAccolade: accolades_device = accolades_device{}
+    @editable
+    WinAccolade: accolades_device = accolades_device{}
+    @editable
+    EliminateAnalytic: analytics_device = analytics_device{}
+    @editable
+    ImposterWinAnalytic: analytics_device = analytics_device{}
+    @editable
+    CrewmateWinAnalytic: analytics_device = analytics_device{}
 
     var CustomPlayers: [player]custom_player = map{}
     var GameEnded: event() = event(){}
@@ -301,6 +311,9 @@ game_manager_device := class(creative_device):
                 then:
                     PlayerStatsManager.RecordPlayerStat(EliminatingAgent, StatType.Kills, 1)
 
+                    EliminationAccolade.Award(EliminatingAgent)
+                    EliminateAnalytic.Submit(EliminatingAgent)
+
                 if(set EliminationCooldown[EliminatingAgent] = ValueEliminationCooldown):
                     spawn:
                         EliminationCooldownTimer(EliminatingAgent)
@@ -393,6 +406,8 @@ game_manager_device := class(creative_device):
                         PlayerStatsManager.RecordPlayerStat(NewAgent, StatType.ImposterWins, 1)
                         Character.PutInStasis(stasis_args{})
                         VictoryHudDevice.Show(NewAgent)
+                        WinAccolade.Award(NewAgent)
+                        ImposterWinAnalytic.Submit(NewAgent)
                         set PlayerIndex += 1
                     else:
                         DefeatHudDevice.Show(NewAgent)
@@ -405,6 +420,8 @@ game_manager_device := class(creative_device):
                         PlayerStatsManager.RecordPlayerStat(NewAgent, StatType.CrewmateWins, 1)
                         Character.PutInStasis(stasis_args{})
                         VictoryHudDevice.Show(NewAgent)
+                        WinAccolade.Award(NewAgent)
+                        CrewmateWinAnalytic.Submit(NewAgent)
                         set PlayerIndex += 1
                     else:
                         DefeatHudDevice.Show(NewAgent)

@@ -35,6 +35,8 @@ vent_device := class(creative_device):
     MoveLeftTrigger: input_trigger_device = input_trigger_device{}
     @editable
     EscapeTrigger: input_trigger_device = input_trigger_device{}
+    @editable
+    VentAnalytic: analytics_device = analytics_device{}
 
     var CurrentCameraIndex: int = 0
     var SelectedVentCopy: selectable_vent = selectable_vent{}
@@ -96,6 +98,7 @@ vent_device := class(creative_device):
         MoveRightTrigger.Enable()
         MoveLeftTrigger.Enable()
         EscapeTrigger.Enable()
+        VentAnalytic.Submit(Agent)
 
         SetupUI(Agent)
         ChangeCamera(Agent)
