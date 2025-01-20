@@ -65,8 +65,6 @@ voting_device := class(creative_device):
             CurrentPlayer.HasVoted = false
             CurrentPlayer.IsDead = false
         then:
-            Print("Firing")
-            Print(AgentToMessage(CurrentAgent, ""))
             # If they've not already voted increase the count
             set VotedForPlayer.Votes += 1
             set CurrentPlayer.HasVoted = true

@@ -24,14 +24,10 @@ custom_player := class<concrete>:
     var PlayerClass: int = 0
 
 player_manager_device := class(creative_device):
-    @editable
-    StartTimerDevice: timer_device = timer_device{}
     @editable 
     VotingTable: creative_prop = creative_prop{}
     @editable
     PlayerCounter: player_counter_device = player_counter_device{}
-    @editable
-    Button: button_device = button_device{}
 
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
     var CustomPlayers: [player]custom_player = map{}
@@ -43,16 +39,7 @@ player_manager_device := class(creative_device):
     var GameHasStarted: logic = false
 
     OnBegin<override>()<suspends>: void=
-        Button.InteractedWithEvent.Subscribe(ManualOverride)
-
-        StartTimerDevice.PauseForAll()
-
-        PlayerCounter.CountedEvent.Subscribe(PlayerJoined)
-        StartTimerDevice.SuccessEvent.Subscribe(OnStartGame)
-
-    ManualOverride(Agent: agent): void=
-        StartTimerDevice.SetActiveDuration(3.0)
-        StartTimerDevice.ResumeForAll()
+        OnStartGame()
 
     StatsUI(Agent: agent) :void=
         if(StatsUICanvas[Agent]):
@@ -107,31 +94,21 @@ player_manager_device := class(creative_device):
                     PlayerUI.AddWidget(SelectedCanvas)
 
 
-    PlayerJoined(Agent: agent): void=
-        set PlayersCount = GetPlayspace().GetPlayers().Length
+    # PlayerJoined(Agent: agent): void=
+    #     set PlayersCount = GetPlayspace().GetPlayers().Length
 
-        if(PlayersCount = 5):
-            StartTimerDevice.StartForAll()
-   
-        if(PlayersCount = 10):
-            StartTimerDevice.SetActiveDuration(5.0)
-
-        StatsUI(Agent);
+    #     StatsUI(Agent);
 
     PlayerLeft(Agent: agent): void=
         set PlayersCount = GetPlayspace().GetPlayers().Length
 
-        if(PlayersCount < 5):
-            StartTimerDevice.ResetForAll()
-
         for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
             if:
                 GameManager := game_manager_device[CreativeObject]
-                GameHasStarted = true
             then:
                 GameManager.CheckIfImpostersWon()
 
-    OnStartGame(MaybeAgent: ?agent): void=
+    OnStartGame()<suspends>: void=
         set Players = GetPlayspace().GetPlayers()
 
         PlayerStatsManager.InitAllPlayers(Players)
@@ -139,22 +116,6 @@ player_manager_device := class(creative_device):
         for(Player : Players):
             if(set CustomPlayers[Player] = custom_player{}){}
 
-            if:
-                Character := Player.GetFortCharacter[]
-                NewAgent := Character.GetAgent[]
-                PlayerUI := GetPlayerUI[Player]
-
-                Translation := VotingTable.GetTransform().Translation
-
-                Character.TeleportTo[
-                    vector3{X := Translation.X + (PlayerIndex * 100.0), Y := Translation.Y + (PlayerIndex * 100.0), Z := Translation.Z},
-                    Character.GetTransform().Rotation
-                ]
-            then:
-                set PlayerIndex += 1
-
-                if(CurrentCanvas := StatsUICanvas[NewAgent]):
-                    PlayerUI.RemoveWidget(CurrentCanvas)
-
+        Sleep(1.0)
         PlayersSet.Signal()
         set GameHasStarted = true

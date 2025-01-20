@@ -529,7 +529,6 @@ tasks_device := class(creative_device):
 
     OnTaskComplete(Agent: agent, SelectedTask: Task): void=
         var TasksPercentage: int = 0
-        Print(AgentToMessage(Agent, ""))
 
         if:
             Player := player[Agent]

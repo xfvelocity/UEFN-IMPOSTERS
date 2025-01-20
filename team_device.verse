@@ -31,7 +31,6 @@ team_device := class(creative_device):
         for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
             if(PlayerManager := player_manager_device[CreativeObject]):
                 PlayerManager.PlayersSet.Await()
-
                 set CustomPlayers = PlayerManager.CustomPlayers
                 set Players = PlayerManager.Players
         

@@ -87,8 +87,8 @@ game_manager_device := class(creative_device):
                 PlayerManager.PlayersSet.Await()
                 set CustomPlayers = PlayerManager.CustomPlayers
 
-                spawn:
-                    AsyncCountdown()
+            spawn:
+                AsyncCountdown()
 
         EmergencyButton.InteractedWithEvent.Subscribe(EmergencyButtonPressed)
 
@@ -304,10 +304,6 @@ game_manager_device := class(creative_device):
                 if(set EliminationCooldown[EliminatingAgent] = ValueEliminationCooldown):
                     spawn:
                         EliminationCooldownTimer(EliminatingAgent)
-
-        else:
-            Print("Cooldown not complete")
-
 
     HandleFollowProps()<suspends>: void=
         loop:
