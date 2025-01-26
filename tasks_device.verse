@@ -245,7 +245,6 @@ tasks_device := class(creative_device):
             RandomClassIndex: int = GetRandomInt(10, TaskList.Length + 9)
 
             if:
-                CustomPlayer.IsImposter = false
                 PlayerClass := PlayerClasses[RandomClassIndex - 10]
                 FortCharacter := Player.GetFortCharacter[]
                 Agent := FortCharacter.GetAgent[]
@@ -431,15 +430,18 @@ tasks_device := class(creative_device):
     TasksUI()<suspends>: void=
         for(Player -> CustomPlayer : CustomPlayers):
             if:
-                CustomPlayer.IsImposter = false
-
                 FortCharacter := Player.GetFortCharacter[]
                 Agent := FortCharacter.GetAgent[]
                 set PlayerTasksCanvas[Agent] = task_ui{}
                 SelectedCanvas := PlayerTasksCanvas[Agent]
                 PlayerUI := GetPlayerUI[Player]
             then:
-                var TitleText: text_block = text_block{DefaultText := StringToMessage("Tasks:"), DefaultTextColor := White}
+                var TitleText: text_block = text_block{DefaultTextColor := White}
+
+                if(CustomPlayer.IsImposter = true):
+                    TitleText.SetText(StringToMessage("Fake Tasks:"))
+                else:
+                    TitleText.SetText(StringToMessage("Tasks:"))
                 
                 var Slots: []canvas_slot = array{
                     canvas_slot:

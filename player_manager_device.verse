@@ -43,8 +43,6 @@ player_count_stats := class:
     @editable
     PlayerCount10: analytics_device = analytics_device{}
 
- 
-
 player_manager_device := class(creative_device):
     @editable 
     VotingTable: creative_prop = creative_prop{}
@@ -76,15 +74,15 @@ player_manager_device := class(creative_device):
 
                 var Slots: []canvas_slot = array{
                     canvas_slot:
-                        Anchors :=  anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 0.0, Y := 0.0}}
-                        Offsets := margin{Left := 15.0, Top := 15.0, Right := 550.0, Bottom := 380.0}
+                        Anchors :=  anchors{Minimum := vector2{X := 1.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 0.0}}
+                        Offsets := margin{Left := -575.0, Top := 15.0, Right := 550.0, Bottom := 380.0}
                         Alignment := vector2{X := 0.0, Y := 0.0}
                         ZOrder := 0
                         SizeToContent := false
                         Widget := BackgroundImage
                     canvas_slot:
-                        Anchors :=  anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 0.0, Y := 0.0}}
-                        Offsets := margin{Left := 35.0, Top := 35.0 , Right := 0.0, Bottom := 0.0}
+                        Anchors :=  anchors{Minimum := vector2{X := 1.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 0.0}}
+                        Offsets := margin{Left := -555.0, Top := 35.0 , Right := 0.0, Bottom := 0.0}
                         Alignment := vector2{X := 0.0, Y := 0.0}
                         ZOrder := 1
                         SizeToContent := false
@@ -98,8 +96,8 @@ player_manager_device := class(creative_device):
 
                     set Slots += array{
                         canvas_slot:
-                            Anchors :=  anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 0.0, Y := 0.0}}
-                            Offsets := margin{Left := 35.0, Top := 90.0 + (TextBlockIndex * 40.0), Right := 0.0, Bottom := 0.0}
+                            Anchors :=  anchors{Minimum := vector2{X := 1.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 0.0}}
+                            Offsets := margin{Left := -555.0, Top := 90.0 + (TextBlockIndex * 40.0), Right := 0.0, Bottom := 0.0}
                             Alignment := vector2{X := 0.0, Y := 0.0}
                             ZOrder := 1
                             SizeToContent := false
@@ -131,6 +129,7 @@ player_manager_device := class(creative_device):
         for(Player : Players):
             if(Agent := agent[Player]):
                 if(set CustomPlayers[Player] = custom_player{}){}
+                StatsUI(Agent)
 
                 if(PlayerIndex = 1):
                     if(PlayerCount = 1):
