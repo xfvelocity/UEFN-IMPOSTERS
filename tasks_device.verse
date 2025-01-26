@@ -152,6 +152,8 @@ tasks_device := class(creative_device):
     TaskAccolade: accolades_device = accolades_device{}
     @editable
     AnalyticDevices: analytics_devices = analytics_devices{}
+    @editable
+    TaskSound: audio_player_device = audio_player_device{}
 
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
 
@@ -172,9 +174,11 @@ tasks_device := class(creative_device):
     }
 
     OnBegin<override>()<suspends>:void=
+        Print("TasksDevice OnBegin")
         for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
             if(PlayerManager := player_manager_device[CreativeObject]):
                 PlayerManager.PlayersSet.Await()
+                Print("TasksDevice After Await")
                 set CustomPlayers = PlayerManager.CustomPlayers
 
                 if(SelectedTaskItem := TaskList[10]):
@@ -589,6 +593,8 @@ tasks_device := class(creative_device):
             AnalyticDevices.WeaponsShooting.Submit(Agent)
         else if(SelectedTask = Task.StorageFuel):
             AnalyticDevices.StorageFuel.Submit(Agent)
+
+        TaskSound.Play(Agent)
 
         if:
             Player := player[Agent]

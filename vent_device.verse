@@ -73,6 +73,7 @@ vent_device := class(creative_device):
     }
     
     OnBegin<override>()<suspends>:void=
+        Print("VentDevice OnBegin")
         DisableInputs();
 
         MoveRightTrigger.PressedEvent.Subscribe(MoveRightPressed)

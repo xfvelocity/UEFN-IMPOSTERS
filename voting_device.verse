@@ -37,6 +37,12 @@ voteable_player := class:
     var BackdropImage: texture_block = texture_block{DefaultImage := Images.TabletBackground}
 
 voting_device := class(creative_device):
+    @editable
+    ImposterVotedAnalytic: analytics_device = analytics_device{}
+    @editable
+    CrewmateVotedAnalytic: analytics_device = analytics_device{}
+    
+    var CustomPlayers: [player]custom_player = map{}
     var Players: [agent]voteable_player = map{}
     var SkipVotes: int = 0
     var VoteSkipped: logic = false
@@ -44,6 +50,13 @@ voting_device := class(creative_device):
     var TimerDuration: int = ValueVotingTime
 
     OnBegin<override>()<suspends>:void=
+        Print("VotingDevice OnBegin")
+        for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
+            if(PlayerManager := player_manager_device[CreativeObject]):
+                PlayerManager.PlayersSet.Await()
+                Print("VotingDevice After Await")
+                set CustomPlayers = PlayerManager.CustomPlayers
+
         for (Player : GetPlayspace().GetPlayers()):
             if:
                 Character := Player.GetFortCharacter[]
@@ -217,6 +230,12 @@ voting_device := class(creative_device):
             FortChar := Agent.GetFortCharacter[]
         then:
             FortChar.Damage(100000.0)
+
+            if(CustomPlayer := CustomPlayers[Agent]):
+                if(CustomPlayer.IsImposter = true):
+                    ImposterVotedAnalytic.Submit(Agent)
+                else:
+                    CrewmateVotedAnalytic.Submit(Agent)
 
         Sleep(3.0)
 

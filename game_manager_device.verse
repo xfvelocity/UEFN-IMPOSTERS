@@ -9,19 +9,18 @@ using { /UnrealEngine.com/Temporary/UI }
 using { /Fortnite.com/UI }
 using { /Verse.org/Colors/NamedColors }
 
-ValueEliminationCooldown: int = 22
-ValueEmergencyButtonCooldown: int = 15
+# Tags
+PlayerManagerTag := class(tag):
+GameManagerTag := class(tag):
+VotingDeviceTag := class(tag):
+TeamDeviceTag := class(tag):
+
+# Variables
+ValueEliminationCooldown: int = 35
+ValueEmergencyButtonCooldown: int = 30
 ValueVotingTime: int = 60
 
 IsOdd(X: int)<decides><transacts>:void = (Mod[X, 2] <> 0)
-
-GameManagerTag := class(tag):
-
-emergency_button_tag := class(tag):
-
-voting_device_tag := class(tag):
-
-team_device_tag := class(tag):
 
 EliminatePlayerHandler := class:
     Device: game_manager_device   
@@ -72,13 +71,17 @@ game_manager_device := class(creative_device):
     @editable
     EliminationAccolade: accolades_device = accolades_device{}
     @editable
-    WinAccolade: accolades_device = accolades_device{}
+    ImposterWinAccolade: accolades_device = accolades_device{}
+    @editable
+    CrewmateWinAccolade: accolades_device = accolades_device{}
     @editable
     EliminateAnalytic: analytics_device = analytics_device{}
     @editable
     ImposterWinAnalytic: analytics_device = analytics_device{}
     @editable
     CrewmateWinAnalytic: analytics_device = analytics_device{}
+    @editable
+    EliminateSound: audio_player_device = audio_player_device{}
 
     var CustomPlayers: [player]custom_player = map{}
     var GameEnded: event() = event(){}
@@ -92,9 +95,11 @@ game_manager_device := class(creative_device):
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
 
     OnBegin<override>()<suspends>:void=
+        Print("GameManagerDevice OnBegin")
         for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
             if(PlayerManager := player_manager_device[CreativeObject]):
                 PlayerManager.PlayersSet.Await()
+                Print("GameManagerDevice After Await")
                 set CustomPlayers = PlayerManager.CustomPlayers
 
             spawn:
@@ -245,7 +250,7 @@ game_manager_device := class(creative_device):
     SetupProps(): void=
         var PropsIndex: int = 0
 
-        for (CreativeObject : Self.FindCreativeObjectsWithTag(team_device_tag{})):
+        for (CreativeObject : Self.FindCreativeObjectsWithTag(TeamDeviceTag{})):
             for (Player -> CustomPlayer : CustomPlayers):
                 if:
                     CustomPlayer.IsImposter = false
@@ -304,6 +309,9 @@ game_manager_device := class(creative_device):
                 Player := player[EliminatedAgent]
                 FortCharacter := Player.GetFortCharacter[]
             then:
+                EliminateSound.Play(EliminatingAgent)
+                EliminateSound.Play(EliminatedAgent)
+
                 FortCharacter.Damage(100000.0)
 
                 if:
@@ -335,7 +343,7 @@ game_manager_device := class(creative_device):
     HandlePlayerElimination(EliminationResult: elimination_result): void=
         FortCharacter := EliminationResult.EliminatedCharacter
 
-        for(CreativeObject : FindCreativeObjectsWithTag(voting_device_tag{})):
+        for(CreativeObject : FindCreativeObjectsWithTag(VotingDeviceTag{})):
             # Set eliminated player as dead
             if:
                 VotingDevice := voting_device[CreativeObject]
@@ -347,24 +355,7 @@ game_manager_device := class(creative_device):
                 # Allow the report button to be activated
                 EnableReport(Agent);
         
-        if(Agent := FortCharacter.GetAgent[]):
-            ResetImposterCooldown(Agent)
-
         CheckIfImpostersWon()
-
-    ResetImposterCooldown(Agent: agent): void=
-        for(CreativeObject : FindCreativeObjectsWithTag(team_device_tag{})):
-            if:
-                TeamDevice := team_device[CreativeObject]
-                Player := player[Agent]
-
-                CustomPlayer := CustomPlayers[Player]
-                CustomPlayer.IsImposter = true
-            then:
-                TeamDevice.CanNotEliminateClassSelector.ChangeClass(Agent)
-
-                spawn:
-                    TeamDevice.SetCooldown(Agent)
 
     EnableReport(Agent: agent): void=        
         if:
@@ -406,8 +397,11 @@ game_manager_device := class(creative_device):
                         PlayerStatsManager.RecordPlayerStat(NewAgent, StatType.ImposterWins, 1)
                         Character.PutInStasis(stasis_args{})
                         VictoryHudDevice.Show(NewAgent)
-                        WinAccolade.Award(NewAgent)
-                        ImposterWinAnalytic.Submit(NewAgent)
+                        ImposterWinAccolade.Award(NewAgent)
+
+                        if(PlayerIndex = 1):
+                            ImposterWinAnalytic.Submit(NewAgent)
+
                         set PlayerIndex += 1
                     else:
                         DefeatHudDevice.Show(NewAgent)
@@ -420,8 +414,11 @@ game_manager_device := class(creative_device):
                         PlayerStatsManager.RecordPlayerStat(NewAgent, StatType.CrewmateWins, 1)
                         Character.PutInStasis(stasis_args{})
                         VictoryHudDevice.Show(NewAgent)
-                        WinAccolade.Award(NewAgent)
-                        CrewmateWinAnalytic.Submit(NewAgent)
+                        CrewmateWinAccolade.Award(NewAgent)
+                        
+                        if(PlayerIndex = 1):
+                            CrewmateWinAnalytic.Submit(NewAgent)
+
                         set PlayerIndex += 1
                     else:
                         DefeatHudDevice.Show(NewAgent)
@@ -458,7 +455,7 @@ game_manager_device := class(creative_device):
     Reported(Agent: agent): void=
         AudioPlayer.Play()
 
-        for(CreativeObject : FindCreativeObjectsWithTag(voting_device_tag{})):
+        for(CreativeObject : FindCreativeObjectsWithTag(VotingDeviceTag{})):
             if:
                 VotingDevice := voting_device[CreativeObject]
             then:

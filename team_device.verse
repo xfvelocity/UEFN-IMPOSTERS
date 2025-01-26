@@ -14,10 +14,6 @@ team_device := class(creative_device):
     @editable 
     CrewmateClassSelector: class_and_team_selector_device = class_and_team_selector_device{}
     @editable 
-    CanEliminateClassSelector: class_and_team_selector_device = class_and_team_selector_device{}
-    @editable 
-    CanNotEliminateClassSelector: class_and_team_selector_device = class_and_team_selector_device{}
-    @editable 
     CrewmateHudDevice: hud_message_device = hud_message_device{}
     @editable 
     ImposterHudDevice: hud_message_device = hud_message_device{}
@@ -28,9 +24,11 @@ team_device := class(creative_device):
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
 
     OnBegin<override>()<suspends>:void=
+        Print("TeamDevice OnBegin")
         for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
             if(PlayerManager := player_manager_device[CreativeObject]):
                 PlayerManager.PlayersSet.Await()
+                Print("TasksDevice After Await")
                 set CustomPlayers = PlayerManager.CustomPlayers
                 set Players = PlayerManager.Players
         
@@ -49,24 +47,6 @@ team_device := class(creative_device):
 
                 PlayerStatsManager.RecordPlayerStat(Agent, StatType.CrewmatePlays, 1)
 
-        # Once the cooldown is up, allow the player to eliminate
-        Sleep(EliminateCooldown)
-
-        for(Player -> CustomPlayer : CustomPlayers):
-            if:
-                CustomPlayer.IsImposter = true
-
-                FortCharacter := Player.GetFortCharacter[]
-                Agent := FortCharacter.GetAgent[]
-            then:
-                CanEliminateClassSelector.ChangeClass(Agent)
-
-                PlayerStatsManager.RecordPlayerStat(Agent, StatType.ImposterPlays, 1)
-
-    SetCooldown(Agent: agent)<suspends>: void=
-        Sleep(EliminateCooldown)
-        CanEliminateClassSelector.ChangeClass(Agent)
-
     SetImposter(Player: player): void=
         if:
             FortCharacter := Player.GetFortCharacter[]
@@ -77,6 +57,7 @@ team_device := class(creative_device):
             # Set to imposters team and show the imposters ui
             ImposterClassSelector.ChangeTeam(Agent)
             ImposterHudDevice.Show(Agent)
+            PlayerStatsManager.RecordPlayerStat(Agent, StatType.ImposterPlays, 1)
 
             set CustomPlayer.IsImposter = true
 

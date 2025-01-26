@@ -8,8 +8,6 @@ using { /Verse.org/Simulation/Tags }
 using { /Verse.org/Colors/NamedColors }
 using { /UnrealEngine.com/Temporary/SpatialMath }
 
-PlayerManagerTag := class(tag){}
-
 tasks := class:
     var TasksCompleted: int = 0
     var TaskList: [Task]logic = map{}
@@ -23,22 +21,45 @@ custom_player := class<concrete>:
     var IsDead: logic = false
     var PlayerClass: int = 0
 
+player_count_stats := class:
+    @editable
+    PlayerCount1: analytics_device = analytics_device{}
+    @editable
+    PlayerCount2: analytics_device = analytics_device{}
+    @editable
+    PlayerCount3: analytics_device = analytics_device{}
+    @editable
+    PlayerCount4: analytics_device = analytics_device{}
+    @editable
+    PlayerCount5: analytics_device = analytics_device{}
+    @editable
+    PlayerCount6: analytics_device = analytics_device{}
+    @editable
+    PlayerCount7: analytics_device = analytics_device{}
+    @editable
+    PlayerCount8: analytics_device = analytics_device{}
+    @editable
+    PlayerCount9: analytics_device = analytics_device{}
+    @editable
+    PlayerCount10: analytics_device = analytics_device{}
+
+ 
+
 player_manager_device := class(creative_device):
     @editable 
     VotingTable: creative_prop = creative_prop{}
     @editable
-    PlayerCounter: player_counter_device = player_counter_device{}
+    PlayerCountStats: player_count_stats = player_count_stats{}
 
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
     var CustomPlayers: [player]custom_player = map{}
     var Players: []player = array{}
-    var PlayerIndex: int = 1
     var PlayersSet: event() = event(){}
-    var PlayersCount: int = 0
     var StatsUICanvas: [agent]canvas = map{}
     var GameHasStarted: logic = false
 
     OnBegin<override>()<suspends>: void=
+        Print("PlayerManager OnBegin")
         OnStartGame()
 
     StatsUI(Agent: agent) :void=
@@ -93,15 +114,7 @@ player_manager_device := class(creative_device):
                 then:
                     PlayerUI.AddWidget(SelectedCanvas)
 
-
-    # PlayerJoined(Agent: agent): void=
-    #     set PlayersCount = GetPlayspace().GetPlayers().Length
-
-    #     StatsUI(Agent);
-
     PlayerLeft(Agent: agent): void=
-        set PlayersCount = GetPlayspace().GetPlayers().Length
-
         for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
             if:
                 GameManager := game_manager_device[CreativeObject]
@@ -110,11 +123,38 @@ player_manager_device := class(creative_device):
 
     OnStartGame()<suspends>: void=
         set Players = GetPlayspace().GetPlayers()
+        var PlayerIndex: int = 1
 
+        PlayerCount: int = Players.Length
         PlayerStatsManager.InitAllPlayers(Players)
 
         for(Player : Players):
-            if(set CustomPlayers[Player] = custom_player{}){}
+            if(Agent := agent[Player]):
+                if(set CustomPlayers[Player] = custom_player{}){}
+
+                if(PlayerIndex = 1):
+                    if(PlayerCount = 1):
+                        PlayerCountStats.PlayerCount1.Submit(Agent)
+                    else if(PlayerCount = 2):
+                        PlayerCountStats.PlayerCount2.Submit(Agent)
+                    else if(PlayerCount = 3):
+                        PlayerCountStats.PlayerCount3.Submit(Agent)
+                    else if(PlayerCount = 4):
+                        PlayerCountStats.PlayerCount4.Submit(Agent)
+                    else if(PlayerCount = 5):
+                        PlayerCountStats.PlayerCount5.Submit(Agent)
+                    else if(PlayerCount = 6):
+                        PlayerCountStats.PlayerCount6.Submit(Agent)
+                    else if(PlayerCount = 7):
+                        PlayerCountStats.PlayerCount7.Submit(Agent)
+                    else if(PlayerCount = 8):
+                        PlayerCountStats.PlayerCount8.Submit(Agent)
+                    else if(PlayerCount = 9):
+                        PlayerCountStats.PlayerCount9.Submit(Agent)
+                    else if(PlayerCount = 10):
+                        PlayerCountStats.PlayerCount10.Submit(Agent)
+                
+                set PlayerIndex += 1
 
         Sleep(1.0)
         PlayersSet.Signal()
