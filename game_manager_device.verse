@@ -286,6 +286,12 @@ game_manager_device := class(creative_device):
                     set SurvivingCrewmates += 1
 
         if:
+            SurvivingImposters = 0
+        then:
+            spawn:
+                HandleEndGame(true)
+
+        if:
             SurvivingImposters = 1
             SurvivingCrewmates = 1
         then:
@@ -299,11 +305,6 @@ game_manager_device := class(creative_device):
             spawn:
                 HandleEndGame(false)
         
-        if:
-            SurvivingImposters = 0
-        then:
-            spawn:
-                HandleEndGame(true)
 
     EliminatePlayer(EliminatedAgent: agent, EliminatingAgent: agent): void=
         if(EliminationCooldown[EliminatingAgent] = 0):

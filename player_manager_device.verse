@@ -76,7 +76,9 @@ player_manager_device := class(creative_device):
         OverrideButton.InteractedWithEvent.Subscribe(ManualOverride)
 
         for(Player : GetPlayspace().GetPlayers()):
-            PlayerCountUI(Player);
+            if(Agent := agent[Player]):
+                PlayerCountUI(Player);
+                StatsUI(Agent)
 
     ManualOverride(Agent: agent): void=
         Timer.SetActiveDuration(5.0)
@@ -86,19 +88,37 @@ player_manager_device := class(creative_device):
     PlayerJoined(Agent: agent): void=
         set PlayersCount = GetPlayspace().GetPlayers().Length
 
-        for(Player : GetPlayspace().GetPlayers()):
-            if:
-                NewAgent := agent[Player]
-                Text := PlayerCountText[NewAgent]
-            then:
-                Text.SetText(StringToMessage("Waiting for at least 5 players before starting ({PlayersCount}/10)"))
-            
-        if(PlayersCount = 5):
-            Timer.Start();
-            RemovePlayercountUI()
-    
-        if(PlayersCount = 10):
-            Timer.SetActiveDuration(5.0)
+        StatsUI(Agent)
+
+        Print("PlayerJoined")
+
+        if(GameHasStarted = false):
+            Print("Game Started false")
+
+            for(Player : GetPlayspace().GetPlayers()):
+                if:
+                    NewAgent := agent[Player]
+                    Text := PlayerCountText[NewAgent]
+                then:
+                    Text.SetText(StringToMessage("Waiting for at least 5 players before starting ({PlayersCount}/10)"))
+                
+            if(PlayersCount = 5):
+                Timer.Start();
+                RemovePlayercountUI()
+        
+            if(PlayersCount = 10):
+                Timer.SetActiveDuration(5.0)
+        else if:
+            Player := player[Agent]
+            FortCharacter := Player.GetFortCharacter[]
+        then:
+            Print("Game Started else")
+            spawn:
+                HandlePlayerJoining(FortCharacter)
+
+    HandlePlayerJoining(FortCharacter: fort_character)<suspends>: void=
+        Sleep(2.0)
+        FortCharacter.Damage(10000.0)
 
     RemovePlayercountUI(): void=
         for(Player : GetPlayspace().GetPlayers()):
@@ -188,15 +208,16 @@ player_manager_device := class(creative_device):
                     PlayerUI.AddWidget(SelectedCanvas)
 
     PlayerLeft(Agent: agent): void=
-        if(PlayersCount < 5):
-            Timer.SetActiveDuration(60.0)
-
-        for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
-            if:
-                GameManager := game_manager_device[CreativeObject]
-                GameHasStarted = true
-            then:
-                GameManager.CheckIfImpostersWon()
+        if(GameHasStarted = false):
+            if(PlayersCount < 5):
+                Timer.SetActiveDuration(60.0)
+        else:
+            for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
+                if:
+                    GameManager := game_manager_device[CreativeObject]
+                    GameHasStarted = true
+                then:
+                    GameManager.CheckIfImpostersWon()
 
     OnStartGame(MaybeAgent: ?agent): void=
         spawn:
@@ -213,7 +234,6 @@ player_manager_device := class(creative_device):
         for(Player : Players):
             if(Agent := agent[Player]):
                 if(set CustomPlayers[Player] = custom_player{}){}
-                StatsUI(Agent)
 
                 if(PlayerIndex = 1):
                     if(PlayerCount = 1):
