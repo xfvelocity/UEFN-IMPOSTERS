@@ -48,17 +48,92 @@ player_manager_device := class(creative_device):
     VotingTable: creative_prop = creative_prop{}
     @editable
     PlayerCountStats: player_count_stats = player_count_stats{}
+    @editable
+    PlayerCounter: player_counter_device = player_counter_device{}
+    @editable
+    OverrideButton: button_device = button_device{}
+    @editable
+    Timer: timer_device = timer_device{}
+    @editable
+    Teleporter: teleporter_device = teleporter_device{}
 
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
     var CustomPlayers: [player]custom_player = map{}
-    var Players: []player = array{}
     var PlayersSet: event() = event(){}
     var StatsUICanvas: [agent]canvas = map{}
     var GameHasStarted: logic = false
+    var PlayersCount: int = 0
+
+    var PlayerCountText: [agent]text_block = map{}
+    var PlayerCountCanvas: [agent]canvas = map{}
 
     OnBegin<override>()<suspends>: void=
-        Print("PlayerManager OnBegin")
-        OnStartGame()
+        set PlayersCount = GetPlayspace().GetPlayers().Length
+
+        Timer.SuccessEvent.Subscribe(OnStartGame)
+        PlayerCounter.CountedEvent.Subscribe(PlayerJoined)
+        PlayerCounter.RemovedEvent.Subscribe(PlayerLeft)
+        OverrideButton.InteractedWithEvent.Subscribe(ManualOverride)
+
+        for(Player : GetPlayspace().GetPlayers()):
+            PlayerCountUI(Player);
+
+    ManualOverride(Agent: agent): void=
+        Timer.SetActiveDuration(5.0)
+        Timer.Start();
+        RemovePlayercountUI();
+
+    PlayerJoined(Agent: agent): void=
+        set PlayersCount = GetPlayspace().GetPlayers().Length
+
+        for(Player : GetPlayspace().GetPlayers()):
+            if:
+                NewAgent := agent[Player]
+                Text := PlayerCountText[NewAgent]
+            then:
+                Text.SetText(StringToMessage("Waiting for at least 5 players before starting ({PlayersCount}/10)"))
+            
+        if(PlayersCount = 5):
+            Timer.Start();
+            RemovePlayercountUI()
+    
+        if(PlayersCount = 10):
+            Timer.SetActiveDuration(5.0)
+
+    RemovePlayercountUI(): void=
+        for(Player : GetPlayspace().GetPlayers()):
+            if:
+                Agent := agent[Player]
+                PlayerUI := GetPlayerUI[Player]
+                SelectedPlayerCountCanvas := PlayerCountCanvas[Agent]
+            then:
+                PlayerUI.RemoveWidget(SelectedPlayerCountCanvas);
+
+    PlayerCountUI(Player: player) :void=
+        if:
+            PlayerUI := GetPlayerUI[Player]
+            Agent := agent[Player]
+
+            set PlayerCountText[Agent] = text_block{DefaultTextColor := White, DefaultJustification := text_justification.Center}
+            Text := PlayerCountText[Agent]
+        then:
+            Text.SetText(StringToMessage("Waiting for at least 5 players before starting ({PlayersCount}/10)"))
+            
+            var Slots: []canvas_slot = array{
+                canvas_slot:
+                    Anchors :=  anchors{Minimum := vector2{X := 0.5, Y := 1.0}, Maximum := vector2{X := 0.5, Y := 1.0}}
+                    Offsets := margin{Left := 0.0, Top := -100.0 , Right := 0.0, Bottom := 0.0}
+                    Alignment := vector2{X := 0.0, Y := 0.0}
+                    ZOrder := 1
+                    SizeToContent := false
+                    Widget := Text
+            }
+                
+            if:
+                set PlayerCountCanvas[Agent] = canvas{ Slots := Slots }
+                SelectedCanvas := PlayerCountCanvas[Agent]
+            then:
+                PlayerUI.AddWidget(SelectedCanvas)
 
     StatsUI(Agent: agent) :void=
         if(StatsUICanvas[Agent]):
@@ -113,14 +188,23 @@ player_manager_device := class(creative_device):
                     PlayerUI.AddWidget(SelectedCanvas)
 
     PlayerLeft(Agent: agent): void=
+        if(PlayersCount < 5):
+            Timer.SetActiveDuration(60.0)
+
         for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
             if:
                 GameManager := game_manager_device[CreativeObject]
+                GameHasStarted = true
             then:
                 GameManager.CheckIfImpostersWon()
 
-    OnStartGame()<suspends>: void=
-        set Players = GetPlayspace().GetPlayers()
+    OnStartGame(MaybeAgent: ?agent): void=
+        spawn:
+            StartGame()
+
+    StartGame()<suspends>: void=
+        Print("StartGame")
+        var Players: []player = GetPlayspace().GetPlayers()
         var PlayerIndex: int = 1
 
         PlayerCount: int = Players.Length
@@ -156,5 +240,16 @@ player_manager_device := class(creative_device):
                 set PlayerIndex += 1
 
         Sleep(1.0)
+        Print("PlayersSet.Signal before")
         PlayersSet.Signal()
+        Print("PlayersSet.Signal after")
         set GameHasStarted = true
+
+        for(Player : GetPlayspace().GetPlayers()):
+            if:
+                Agent := agent[Player]
+                PlayerUI := GetPlayerUI[Player]
+                SelectedCanvas := StatsUICanvas[Agent]
+            then:
+                Teleporter.Teleport(Agent)
+                PlayerUI.RemoveWidget(SelectedCanvas)

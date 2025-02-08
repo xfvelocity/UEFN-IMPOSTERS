@@ -45,8 +45,6 @@ follow_prop := class<concrete>:
 
 game_manager_device := class(creative_device):
     @editable 
-    VotingTable: creative_prop = creative_prop{}
-    @editable 
     EmergencyButton: button_device = button_device{}
     @editable
     AudioPlayer: audio_player_device = audio_player_device{}
@@ -82,6 +80,10 @@ game_manager_device := class(creative_device):
     CrewmateWinAnalytic: analytics_device = analytics_device{}
     @editable
     EliminateSound: audio_player_device = audio_player_device{}
+    @editable
+    StartTeleporter: teleporter_device = teleporter_device{}
+    @editable
+    EndTeleporter: teleporter_device = teleporter_device{}
 
     var CustomPlayers: [player]custom_player = map{}
     var GameEnded: event() = event(){}
@@ -392,8 +394,9 @@ game_manager_device := class(creative_device):
                     if:
                         CrewmateWin = false    
                     then:
-                        HandleEndGamePlayers(Player, PlayerIndex)
+                        EndTeleporter.Teleport(Player)
 
+                        Sleep(0.5)
                         PlayerStatsManager.RecordPlayerStat(NewAgent, StatType.ImposterWins, 1)
                         Character.PutInStasis(stasis_args{})
                         VictoryHudDevice.Show(NewAgent)
@@ -409,8 +412,9 @@ game_manager_device := class(creative_device):
                     if:
                         CrewmateWin = true
                     then:
-                        HandleEndGamePlayers(Player, PlayerIndex)
+                        EndTeleporter.Teleport(Player)
                         
+                        Sleep(0.5)
                         PlayerStatsManager.RecordPlayerStat(NewAgent, StatType.CrewmateWins, 1)
                         Character.PutInStasis(stasis_args{})
                         VictoryHudDevice.Show(NewAgent)
@@ -437,21 +441,6 @@ game_manager_device := class(creative_device):
             then:
                 EndGameDevice.Activate(Agent)
     
-    HandleEndGamePlayers(Player: player, PlayerIndex: int): void=        
-        if:
-            Character := Player.GetFortCharacter[]
-        then:
-            var PlayerXOffset: float = 50.0 * PlayerIndex
-            var TeleportPosition: vector3 = vector3{X := -7310.0, Y := -33960.0, Z := 1550.0} 
-
-            if(IsOdd[PlayerIndex]):
-                set TeleportPosition = vector3{X := TeleportPosition.X - PlayerXOffset, Y := TeleportPosition.Y, Z := TeleportPosition.Z}  
-            else:
-                set TeleportPosition = vector3{X := TeleportPosition.X + PlayerXOffset, Y := TeleportPosition.Y, Z := TeleportPosition.Z} 
-
-            if(Character.TeleportTo[TeleportPosition, MakeRotation(TeleportPosition, 0.0)]):
-                
-
     Reported(Agent: agent): void=
         AudioPlayer.Play()
 
@@ -459,22 +448,11 @@ game_manager_device := class(creative_device):
             if:
                 VotingDevice := voting_device[CreativeObject]
             then:
-                var PlayerIndex: int = 1
-
                 VotingDevice.AddUI(Agent)
 
                 # Teleport the player to the meeting table when something is reported
                 for (Player : GetPlayspace().GetPlayers()):
                     if:
-                        Character := Player.GetFortCharacter[]
-                        NewAgent := Character.GetAgent[]
-
-                        VoteablePlayer := VotingDevice.Players[NewAgent]
-                        Translation := VotingTable.GetTransform().Translation
-
-                        Character.TeleportTo[
-                            vector3{X := Translation.X + (PlayerIndex * 100.0), Y := Translation.Y + (PlayerIndex * 100.0), Z := Translation.Z}, 
-                            Character.GetTransform().Rotation
-                        ]
+                        NewAgent := agent[Player]
                     then:
-                        set PlayerIndex += 1
+                        StartTeleporter.Teleport(NewAgent)

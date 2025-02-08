@@ -30,7 +30,7 @@ team_device := class(creative_device):
                 PlayerManager.PlayersSet.Await()
                 Print("TasksDevice After Await")
                 set CustomPlayers = PlayerManager.CustomPlayers
-                set Players = PlayerManager.Players
+                set Players = GetPlayspace().GetPlayers()
         
         SetImposters();
 
