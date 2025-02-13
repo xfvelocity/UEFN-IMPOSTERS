@@ -160,6 +160,7 @@ tasks_device := class(creative_device):
     var CustomPlayers: [player]custom_player = map{}
     var DownloadTaskComplete: logic = false
     var PlayerTasksCanvas: [agent]task_ui = map{}
+    var TotalTasksCanvas: [agent]canvas = map{}
     var PlayerTasksMapIndicators: [agent][Task]map_indicator_device = map{}
     var TotalTasksText: [agent]text_block = map{}
     var TotalTasksCompleted: float = 0.0
@@ -184,13 +185,13 @@ tasks_device := class(creative_device):
                 if(SelectedTaskItem := TaskList[10]):
                     set TotalTasksAmount = CustomPlayers.Length * (SelectedTaskItem.Length * 1.0)
 
-                
                 AssignTasks()
-                spawn:
-                    TasksUI()
-                spawn:
-                    TotalTaskUI()
+                TasksUI()
+                TotalTaskUI()
                 SetListeners()
+
+                spawn:
+                    RemoveUI()
 
     SetListeners()<suspends>: void=
         # Admin Download
@@ -397,7 +398,7 @@ tasks_device := class(creative_device):
         spawn:
             OnDownload(Agent, SelectedTask, IsUploading)
 
-    TotalTaskUI()<suspends>: void=
+    TotalTaskUI(): void=
         for(Player -> CustomPlayer : CustomPlayers):
             if:
                 FortCharacter := Player.GetFortCharacter[]
@@ -420,14 +421,13 @@ tasks_device := class(creative_device):
                             Widget := SelectedTaskText
                     }
 
-                PlayerUI.AddWidget(Canvas)
+                if:
+                    set TotalTasksCanvas[Agent] = Canvas
+                    SelectedTotalTasksCanvas := TotalTasksCanvas[Agent]
+                then:
+                    PlayerUI.AddWidget(SelectedTotalTasksCanvas)
 
-                for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
-                    if(GameManager := game_manager_device[CreativeObject]):
-                        GameManager.GameEnded.Await()
-                        PlayerUI.RemoveWidget(Canvas)
-
-    TasksUI()<suspends>: void=
+    TasksUI(): void=
         for(Player -> CustomPlayer : CustomPlayers):
             if:
                 FortCharacter := Player.GetFortCharacter[]
@@ -483,10 +483,20 @@ tasks_device := class(creative_device):
 
                 PlayerUI.AddWidget(SelectedCanvas.Canvas)
 
-                for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
-                    if(GameManager := game_manager_device[CreativeObject]):
-                        GameManager.GameEnded.Await()
-                        PlayerUI.RemoveWidget(SelectedCanvas.Canvas)
+    RemoveUI()<suspends>: void=
+        for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
+            for(Player -> CustomPlayer : CustomPlayers):
+                if:
+                    PlayerUI := GetPlayerUI[Player]
+                    Agent := agent[Player]
+                    SelectedPlayerTasksCanvas := PlayerTasksCanvas[Agent]
+                    SelectedTotalTasksCanvas := TotalTasksCanvas[Agent]
+                    GameManager := game_manager_device[CreativeObject]
+                then:
+                    GameManager.GameEnded.Await()
+                    PlayerUI.RemoveWidget(SelectedPlayerTasksCanvas.Canvas)
+                    PlayerUI.RemoveWidget(SelectedTotalTasksCanvas)
+
 
     OnDownload(Agent: agent, SelectedTask: Task, Uploading: logic)<suspends>: void=
         set DownloadTaskComplete = false

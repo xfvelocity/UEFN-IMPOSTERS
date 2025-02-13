@@ -49,70 +49,69 @@ player_manager_device := class(creative_device):
     @editable
     PlayerCountStats: player_count_stats = player_count_stats{}
     @editable
-    PlayerCounter: player_counter_device = player_counter_device{}
-    @editable
     OverrideButton: button_device = button_device{}
     @editable
     Timer: timer_device = timer_device{}
     @editable
     Teleporter: teleporter_device = teleporter_device{}
+    @editable
+    PlayerCounter5: player_counter_device = player_counter_device{}
+    @editable
+    PlayerCounter10: player_counter_device = player_counter_device{}
 
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
     var CustomPlayers: [player]custom_player = map{}
     var PlayersSet: event() = event(){}
     var StatsUICanvas: [agent]canvas = map{}
     var GameHasStarted: logic = false
-    var PlayersCount: int = 0
-
-    var PlayerCountText: [agent]text_block = map{}
     var PlayerCountCanvas: [agent]canvas = map{}
 
     OnBegin<override>()<suspends>: void=
-        set PlayersCount = GetPlayspace().GetPlayers().Length
-
         Timer.SuccessEvent.Subscribe(OnStartGame)
-        PlayerCounter.CountedEvent.Subscribe(PlayerJoined)
-        PlayerCounter.RemovedEvent.Subscribe(PlayerLeft)
         OverrideButton.InteractedWithEvent.Subscribe(ManualOverride)
 
-        for(Player : GetPlayspace().GetPlayers()):
-            if(Agent := agent[Player]):
-                PlayerCountUI(Player);
-                StatsUI(Agent)
+        PlayerCounter10.CountedEvent.Subscribe(PlayerJoined)
+        PlayerCounter10.RemovedEvent.Subscribe(PlayerLeft)
+
+        PlayerCounter5.CountSucceedsEvent.Subscribe(Players5Reached)
+        PlayerCounter10.CountSucceedsEvent.Subscribe(Players10Reached)
 
     ManualOverride(Agent: agent): void=
-        Timer.SetActiveDuration(5.0)
+        Timer.SetActiveDuration(15.0)
         Timer.Start();
+
+        spawn:
+            HandleRemovePlayercountUI()
+
+    Players5Reached(): void=
+        Timer.SetActiveDuration(60.0)
+        Timer.Start();
+
+        spawn:
+            HandleRemovePlayercountUI()
+
+    Players10Reached(): void=
+        Timer.SetActiveDuration(15.0)
+        Timer.Start();
+
+        spawn:
+            HandleRemovePlayercountUI()
+
+    HandleRemovePlayercountUI()<suspends>: void=
+        Sleep(5.0)
         RemovePlayercountUI();
-
+    
     PlayerJoined(Agent: agent): void=
-        set PlayersCount = GetPlayspace().GetPlayers().Length
-
-        StatsUI(Agent)
-
         Print("PlayerJoined")
+        if(Player := player[Agent]):
+            StatsUI(Agent)
+            PlayerCountUI(Player);
 
-        if(GameHasStarted = false):
-            Print("Game Started false")
-
-            for(Player : GetPlayspace().GetPlayers()):
-                if:
-                    NewAgent := agent[Player]
-                    Text := PlayerCountText[NewAgent]
-                then:
-                    Text.SetText(StringToMessage("Waiting for at least 5 players before starting ({PlayersCount}/10)"))
-                
-            if(PlayersCount = 5):
-                Timer.Start();
-                RemovePlayercountUI()
-        
-            if(PlayersCount = 10):
-                Timer.SetActiveDuration(5.0)
-        else if:
+        if:
+            GameHasStarted = true
             Player := player[Agent]
             FortCharacter := Player.GetFortCharacter[]
         then:
-            Print("Game Started else")
             spawn:
                 HandlePlayerJoining(FortCharacter)
 
@@ -131,13 +130,15 @@ player_manager_device := class(creative_device):
 
     PlayerCountUI(Player: player) :void=
         if:
+            Agent := agent[Player]
+            PlayerCountCanvas[Agent]
+        then:
+        else if:
             PlayerUI := GetPlayerUI[Player]
             Agent := agent[Player]
-
-            set PlayerCountText[Agent] = text_block{DefaultTextColor := White, DefaultJustification := text_justification.Center}
-            Text := PlayerCountText[Agent]
         then:
-            Text.SetText(StringToMessage("Waiting for at least 5 players before starting ({PlayersCount}/10)"))
+            Text :=  text_block{DefaultTextColor := White, DefaultJustification := text_justification.Center}
+            Text.SetText(StringToMessage("Waiting for at least 5 players before starting"))
             
             var Slots: []canvas_slot = array{
                 canvas_slot:
@@ -208,9 +209,8 @@ player_manager_device := class(creative_device):
                     PlayerUI.AddWidget(SelectedCanvas)
 
     PlayerLeft(Agent: agent): void=
+        Print("PlayerLeft")
         if(GameHasStarted = false):
-            if(PlayersCount < 5):
-                Timer.SetActiveDuration(60.0)
         else:
             for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
                 if:
@@ -230,6 +230,8 @@ player_manager_device := class(creative_device):
 
         PlayerCount: int = Players.Length
         PlayerStatsManager.InitAllPlayers(Players)
+
+        Print("{PlayerCount}")
 
         for(Player : Players):
             if(Agent := agent[Player]):
