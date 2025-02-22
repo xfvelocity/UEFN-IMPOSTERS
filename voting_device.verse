@@ -57,7 +57,7 @@ voting_device := class(creative_device):
                 Print("VotingDevice After Await")
                 set CustomPlayers = PlayerManager.CustomPlayers
 
-        for (Player : GetPlayspace().GetPlayers()):
+        for (Player : GetPlayspace().GetParticipants()):
             if:
                 Character := Player.GetFortCharacter[]
                 NewAgent := Character.GetAgent[]
@@ -102,11 +102,10 @@ voting_device := class(creative_device):
         spawn:
             AsyncCountdown()
 
-        for (Player : GetPlayspace().GetPlayers()):
+        for (NewAgent : GetPlayspace().GetParticipants()):
             if:
-                Character := Player.GetFortCharacter[]
+                Player := player[Agent]
                 PlayerUI := GetPlayerUI[Player]
-                NewAgent := Character.GetAgent[]
 
                 VoteablePlayer := Players[NewAgent]
             then:
@@ -116,12 +115,11 @@ voting_device := class(creative_device):
                 
                 PlayerUI.AddWidget(VoteablePlayer.Canvas, player_ui_slot{InputMode := ui_input_mode.All})
 
-    HandleExit(Player: player): void=
+    HandleExit(Agent: agent): void=
         # Remove the UI from the player
         if:
+            Player := player[Agent]
             PlayerUI := GetPlayerUI[Player]
-            FortCharacter := Player.GetFortCharacter[]
-            Agent := FortCharacter.GetAgent[]
             VoteablePlayer := Players[Agent]
         then:
             PlayerUI.RemoveWidget(VoteablePlayer.Canvas)
@@ -139,7 +137,7 @@ voting_device := class(creative_device):
             Sleep(1.0)
             set RemainingTime = RemainingTime - 1
 
-            for (Player : GetPlayspace().GetPlayers()):
+            for (Player : GetPlayspace().GetParticipants()):
                 if:
                     Character := Player.GetFortCharacter[]
                     NewAgent := Character.GetAgent[]
@@ -221,8 +219,8 @@ voting_device := class(creative_device):
 
                 PlayerUI.AddWidget(CanvasItem.Canvas, player_ui_slot{InputMode := ui_input_mode.All})
         
-        for (Player : GetPlayspace().GetPlayers()):
-            HandleExit(Player)
+        for (Agent : GetPlayspace().GetParticipants()):
+            HandleExit(Agent)
 
         if:
             TiedVote = false

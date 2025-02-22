@@ -223,10 +223,8 @@ game_manager_device := class(creative_device):
         var RemainingTime: int = ValueEmergencyButtonCooldown
 
         loop:
-            for (Player : GetPlayspace().GetPlayers()):
+            for (Agent : GetPlayspace().GetParticipants()):
                 if:
-                    Character := Player.GetFortCharacter[]
-                    Agent := Character.GetAgent[]
                     SelectedEmergencyButtonText := EmergencyButtonText[Agent]
                 then:
                     SelectedEmergencyButtonText.SetText(StringToMessage("Button is on cooldown: {RemainingTime}s"))
@@ -237,10 +235,9 @@ game_manager_device := class(creative_device):
             if(RemainingTime <= 0):
                 set EmergencyButtonCooldownComplete = true
 
-                for (Player : GetPlayspace().GetPlayers()):
+                for (Agent : GetPlayspace().GetParticipants()):
                     if:
-                        Character := Player.GetFortCharacter[]
-                        Agent := Character.GetAgent[]
+                        Player := player[Agent]
                         PlayerUI := GetPlayerUI[Player]
     
                         SelectedEmergencyButtonCanvas := EmergencyButtonCanvas[Agent]
@@ -452,7 +449,7 @@ game_manager_device := class(creative_device):
                 VotingDevice.AddUI(Agent)
 
                 # Teleport the player to the meeting table when something is reported
-                for (Player : GetPlayspace().GetPlayers()):
+                for (Player : GetPlayspace().GetParticipants()):
                     if:
                         NewAgent := agent[Player]
                     then:

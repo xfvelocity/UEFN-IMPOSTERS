@@ -10,9 +10,10 @@ player_stats_manager := class():
             not PlayerStatsMap[Player]
             set PlayerStatsMap[Player] = player_stats_table{}
 
-    InitAllPlayers(Players: []player): void=
-        for(Player : Players):
-            InitPlayer(Player)
+    InitAllPlayers(Agents: []agent): void=
+        for(Agent : Agents):
+            if(Player := player[Agent]):
+                InitPlayer(Player)
 
     # Returns the players stats
     GetPlayerStats(Agent: agent)<decides><transacts>: player_stats_table=

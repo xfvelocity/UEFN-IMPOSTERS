@@ -19,7 +19,7 @@ team_device := class(creative_device):
     ImposterHudDevice: hud_message_device = hud_message_device{}
 
     var CustomPlayers: [player]custom_player = map{}
-    var Players: []player = array{}
+    var Agents: []agent = array{}
     var ImpostersCount: int = 0
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
 
@@ -30,7 +30,7 @@ team_device := class(creative_device):
                 PlayerManager.PlayersSet.Await()
                 Print("TasksDevice After Await")
                 set CustomPlayers = PlayerManager.CustomPlayers
-                set Players = GetPlayspace().GetPlayers()
+                set Agents = GetPlayspace().GetParticipants()
         
         SetImposters();
 
@@ -62,7 +62,10 @@ team_device := class(creative_device):
             set CustomPlayer.IsImposter = true
 
     SetSecondImposter(): void=
-        if(Player := Players[GetRandomInt(0, Players.Length - 1)]):
+        if:
+            Agent := Agents[GetRandomInt(0, Agents.Length - 1)]
+            Player := player[Agent]
+        then:
             if:
                 CustomPlayer := CustomPlayers[Player]
                 CustomPlayer.IsImposter = true
@@ -74,13 +77,13 @@ team_device := class(creative_device):
 
     SetImposters(): void=
         set ImpostersCount = 1
-        Value: int = GetRandomInt(0, Players.Length - 1)
+        Value: int = GetRandomInt(0, Agents.Length - 1)
 
         if:
-            Player := Players[Value]
+            Player := player[Agents[Value]]
         then:
             SetImposter(Player)
 
-        if(Players.Length >= 5):
+        if(Agents.Length >= 5):
             set ImpostersCount = 2
             SetSecondImposter()

@@ -7,6 +7,8 @@ using { /Fortnite.com/Characters }
 using { /Verse.org/Simulation/Tags }
 using { /Verse.org/Colors/NamedColors }
 using { /UnrealEngine.com/Temporary/SpatialMath }
+using { /Fortnite.com/Game }
+using { /Fortnite.com/FortPlayerUtilities }
 
 tasks := class:
     var TasksCompleted: int = 0
@@ -53,11 +55,13 @@ player_manager_device := class(creative_device):
     @editable
     Timer: timer_device = timer_device{}
     @editable
-    Teleporter: teleporter_device = teleporter_device{}
+    Teleporters: []teleporter_device = array{}
     @editable
     PlayerCounter5: player_counter_device = player_counter_device{}
     @editable
     PlayerCounter10: player_counter_device = player_counter_device{}
+    @editable
+    SpectateButton: button_device = button_device{}
 
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
     var CustomPlayers: [player]custom_player = map{}
@@ -76,6 +80,26 @@ player_manager_device := class(creative_device):
         PlayerCounter5.CountSucceedsEvent.Subscribe(Players5Reached)
         PlayerCounter10.CountSucceedsEvent.Subscribe(Players10Reached)
 
+    GameStartedUI(Agent: agent): void=
+        if:
+            Player := player[Agent]
+            PlayerUI := GetPlayerUI[Player]
+        then:
+            Text :=  text_block{DefaultTextColor := White, DefaultJustification := text_justification.Center}
+            Text.SetText(StringToMessage("Game has already started. You will join the next game."))
+            
+            var Slots: []canvas_slot = array{
+                canvas_slot:
+                    Anchors :=  anchors{Minimum := vector2{X := 0.5, Y := 1.0}, Maximum := vector2{X := 0.5, Y := 1.0}}
+                    Offsets := margin{Left := 0.0, Top := -100.0 , Right := 0.0, Bottom := 0.0}
+                    Alignment := vector2{X := 0.0, Y := 0.0}
+                    ZOrder := 1
+                    SizeToContent := false
+                    Widget := Text
+            }
+                
+            PlayerUI.AddWidget(canvas{ Slots := Slots })
+
     ManualOverride(Agent: agent): void=
         Timer.SetActiveDuration(15.0)
         Timer.Start();
@@ -84,7 +108,7 @@ player_manager_device := class(creative_device):
             HandleRemovePlayercountUI()
 
     Players5Reached(): void=
-        Timer.SetActiveDuration(60.0)
+        Timer.SetActiveDuration(15.0)
         Timer.Start();
 
         spawn:
@@ -102,27 +126,19 @@ player_manager_device := class(creative_device):
         RemovePlayercountUI();
     
     PlayerJoined(Agent: agent): void=
-        Print("PlayerJoined")
-        if(Player := player[Agent]):
-            StatsUI(Agent)
-            PlayerCountUI(Player);
 
         if:
             GameHasStarted = true
-            Player := player[Agent]
-            FortCharacter := Player.GetFortCharacter[]
         then:
-            spawn:
-                HandlePlayerJoining(FortCharacter)
-
-    HandlePlayerJoining(FortCharacter: fort_character)<suspends>: void=
-        Sleep(2.0)
-        FortCharacter.Damage(10000.0)
+            GameStartedUI(Agent)
+        else if(Player := player[Agent]):
+            StatsUI(Agent)
+            PlayerCountUI(Player);
 
     RemovePlayercountUI(): void=
-        for(Player : GetPlayspace().GetPlayers()):
+        for(Agent : GetPlayspace().GetParticipants()):
             if:
-                Agent := agent[Player]
+                Player := player[Agent]
                 PlayerUI := GetPlayerUI[Player]
                 SelectedPlayerCountCanvas := PlayerCountCanvas[Agent]
             then:
@@ -225,41 +241,43 @@ player_manager_device := class(creative_device):
 
     StartGame()<suspends>: void=
         Print("StartGame")
-        var Players: []player = GetPlayspace().GetPlayers()
+        var Agents: []agent = GetPlayspace().GetParticipants()
         var PlayerIndex: int = 1
 
-        PlayerCount: int = Players.Length
-        PlayerStatsManager.InitAllPlayers(Players)
+        PlayerCount: int = Agents.Length
+        PlayerStatsManager.InitAllPlayers(Agents)
 
         Print("{PlayerCount}")
 
-        for(Player : Players):
-            if(Agent := agent[Player]):
-                if(set CustomPlayers[Player] = custom_player{}){}
+        for(Agent : Agents):
+            if:
+                Player := player[Agent]
+                set CustomPlayers[Player] = custom_player{}
+            then:
 
-                if(PlayerIndex = 1):
-                    if(PlayerCount = 1):
-                        PlayerCountStats.PlayerCount1.Submit(Agent)
-                    else if(PlayerCount = 2):
-                        PlayerCountStats.PlayerCount2.Submit(Agent)
-                    else if(PlayerCount = 3):
-                        PlayerCountStats.PlayerCount3.Submit(Agent)
-                    else if(PlayerCount = 4):
-                        PlayerCountStats.PlayerCount4.Submit(Agent)
-                    else if(PlayerCount = 5):
-                        PlayerCountStats.PlayerCount5.Submit(Agent)
-                    else if(PlayerCount = 6):
-                        PlayerCountStats.PlayerCount6.Submit(Agent)
-                    else if(PlayerCount = 7):
-                        PlayerCountStats.PlayerCount7.Submit(Agent)
-                    else if(PlayerCount = 8):
-                        PlayerCountStats.PlayerCount8.Submit(Agent)
-                    else if(PlayerCount = 9):
-                        PlayerCountStats.PlayerCount9.Submit(Agent)
-                    else if(PlayerCount = 10):
-                        PlayerCountStats.PlayerCount10.Submit(Agent)
+            if(PlayerIndex = 1):
+                if(PlayerCount = 1):
+                    PlayerCountStats.PlayerCount1.Submit(Agent)
+                else if(PlayerCount = 2):
+                    PlayerCountStats.PlayerCount2.Submit(Agent)
+                else if(PlayerCount = 3):
+                    PlayerCountStats.PlayerCount3.Submit(Agent)
+                else if(PlayerCount = 4):
+                    PlayerCountStats.PlayerCount4.Submit(Agent)
+                else if(PlayerCount = 5):
+                    PlayerCountStats.PlayerCount5.Submit(Agent)
+                else if(PlayerCount = 6):
+                    PlayerCountStats.PlayerCount6.Submit(Agent)
+                else if(PlayerCount = 7):
+                    PlayerCountStats.PlayerCount7.Submit(Agent)
+                else if(PlayerCount = 8):
+                    PlayerCountStats.PlayerCount8.Submit(Agent)
+                else if(PlayerCount = 9):
+                    PlayerCountStats.PlayerCount9.Submit(Agent)
+                else if(PlayerCount = 10):
+                    PlayerCountStats.PlayerCount10.Submit(Agent)
                 
-                set PlayerIndex += 1
+            set PlayerIndex += 1
 
         Sleep(1.0)
         Print("PlayersSet.Signal before")
@@ -267,11 +285,23 @@ player_manager_device := class(creative_device):
         Print("PlayersSet.Signal after")
         set GameHasStarted = true
 
-        for(Player : GetPlayspace().GetPlayers()):
+        var TeleportIndex: int = 0;
+        var LoopingIndex: int = 0;
+
+        for(Agent : GetPlayspace().GetParticipants()):
             if:
-                Agent := agent[Player]
+                Player := player[Agent]
                 PlayerUI := GetPlayerUI[Player]
                 SelectedCanvas := StatsUICanvas[Agent]
             then:
-                Teleporter.Teleport(Agent)
                 PlayerUI.RemoveWidget(SelectedCanvas)
+
+            if(Teleporter := Teleporters[TeleportIndex]):
+                Print("Teleporter found at index {TeleportIndex}")
+                Teleporter.Teleport(Agent)
+                set LoopingIndex += 1
+
+            if(LoopingIndex = 2):
+                set TeleportIndex += 1
+                set LoopingIndex = 0
+            
