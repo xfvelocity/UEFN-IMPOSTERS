@@ -21,6 +21,12 @@ ValueEmergencyButtonCooldown: int = 25
 ValueVotingTime: int = 60
 ValuePregameWaitingTime: float = 60.0
 
+# Testing Variables
+# ValueEliminationCooldown: int = 3
+# ValueEmergencyButtonCooldown: int = 3
+# ValueVotingTime: int = 10
+# ValuePregameWaitingTime: float = 3.0
+
 IsOdd(X: int)<decides><transacts>:void = (Mod[X, 2] <> 0)
 
 EliminatePlayerHandler := class:

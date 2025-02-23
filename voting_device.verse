@@ -45,7 +45,6 @@ voting_device := class(creative_device):
     var CustomPlayers: [player]custom_player = map{}
     var Players: [agent]voteable_player = map{}
     var SkipVotes: int = 0
-    var VoteSkipped: logic = false
     var VotedUsersCount: int = 0
     var TimerDuration: int = ValueVotingTime
 
@@ -169,23 +168,37 @@ voting_device := class(creative_device):
     SetResultsUI()<suspends>: void=
         var HighestVotes: int = 0
         var TiedVote: logic = false
-        var HighestVotedPlayer: ?agent = false
+        var MaybeHighestVotedPlayer: ?agent = false
+        var VoteSkipped: logic = false
 
         var ResultsCanvasItems: [agent]results_message = map{}
+        var ResultsText: message = StringToMessage("")
+
+        for(VoteableAgent -> VoteablePlayer : Players):
+            if(VoteablePlayer.Votes > HighestVotes):
+                set HighestVotes = VoteablePlayer.Votes
+                set MaybeHighestVotedPlayer = option{VoteableAgent}
+                set TiedVote = false
+            else if(VoteablePlayer.Votes = HighestVotes):
+                set TiedVote = true
+
+        if(SkipVotes > HighestVotes):
+            set VoteSkipped = true
+            set TiedVote = false
+        else if(SkipVotes = HighestVotes):
+            set TiedVote = true
 
         for(VoteableAgent -> VoteablePlayer : Players):
             if:
                 set ResultsCanvasItems[VoteableAgent] = results_message{}
                 CanvasItem := ResultsCanvasItems[VoteableAgent]
             then:
-                if(VoteablePlayer.Votes > SkipVotes):
-                    if(VoteablePlayer.Votes > HighestVotes):
-                        CanvasItem.Text.SetText(AgentToMessage(VoteableAgent, " was ejected!"))
-                        set HighestVotedPlayer = option{VoteableAgent}
-                    else if(VoteablePlayer.Votes = HighestVotes):
-                        CanvasItem.Text.SetText(StringToMessage("No one was ejected! (Tied)"))
-                else:
+                if(TiedVote = true):
+                    CanvasItem.Text.SetText(StringToMessage("No one was ejected! (Tied)"))
+                else if(VoteSkipped = true):
                     CanvasItem.Text.SetText(StringToMessage("No one was ejected! (Skipped)"))
+                else if(HighestVotedPlayer := MaybeHighestVotedPlayer?):
+                    CanvasItem.Text.SetText(AgentToMessage(HighestVotedPlayer, " was ejected!"))
 
         for (VoteableAgent -> VoteablePlayer : Players):
             if:
@@ -218,7 +231,7 @@ voting_device := class(creative_device):
 
         if:
             TiedVote = false
-            Agent := HighestVotedPlayer?
+            Agent := MaybeHighestVotedPlayer?
             FortChar := Agent.GetFortCharacter[]
         then:
             FortChar.Damage(100000.0)
