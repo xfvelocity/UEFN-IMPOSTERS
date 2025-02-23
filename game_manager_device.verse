@@ -17,8 +17,9 @@ TeamDeviceTag := class(tag):
 
 # Variables
 ValueEliminationCooldown: int = 35
-ValueEmergencyButtonCooldown: int = 30
+ValueEmergencyButtonCooldown: int = 25
 ValueVotingTime: int = 60
+ValuePregameWaitingTime: float = 60.0
 
 IsOdd(X: int)<decides><transacts>:void = (Mod[X, 2] <> 0)
 
@@ -81,9 +82,9 @@ game_manager_device := class(creative_device):
     @editable
     EliminateSound: audio_player_device = audio_player_device{}
     @editable
-    StartTeleporter: teleporter_device = teleporter_device{}
+    Teleporters: []teleporter_device = array{}
     @editable
-    EndTeleporter: teleporter_device = teleporter_device{}
+    PlayerReferences: []player_reference_device = array{}
 
     var CustomPlayers: [player]custom_player = map{}
     var GameEnded: event() = event(){}
@@ -224,9 +225,7 @@ game_manager_device := class(creative_device):
 
         loop:
             for (Agent : GetPlayspace().GetParticipants()):
-                if:
-                    SelectedEmergencyButtonText := EmergencyButtonText[Agent]
-                then:
+                if(SelectedEmergencyButtonText := EmergencyButtonText[Agent]):
                     SelectedEmergencyButtonText.SetText(StringToMessage("Button is on cooldown: {RemainingTime}s"))
 
             Sleep(1.0)
@@ -392,14 +391,14 @@ game_manager_device := class(creative_device):
                     if:
                         CrewmateWin = false    
                     then:
-                        EndTeleporter.Teleport(Player)
-
-                        Sleep(0.5)
                         PlayerStatsManager.RecordPlayerStat(NewAgent, StatType.ImposterWins, 1)
                         Character.PutInStasis(stasis_args{})
                         VictoryHudDevice.Show(NewAgent)
                         ImposterWinAccolade.Award(NewAgent)
 
+                        if(SelectedPlayerReference := PlayerReferences[PlayerIndex]):
+                            SelectedPlayerReference.Register(NewAgent)
+                        
                         if(PlayerIndex = 1):
                             ImposterWinAnalytic.Submit(NewAgent)
 
@@ -410,13 +409,13 @@ game_manager_device := class(creative_device):
                     if:
                         CrewmateWin = true
                     then:
-                        EndTeleporter.Teleport(Player)
-                        
-                        Sleep(0.5)
                         PlayerStatsManager.RecordPlayerStat(NewAgent, StatType.CrewmateWins, 1)
                         Character.PutInStasis(stasis_args{})
                         VictoryHudDevice.Show(NewAgent)
                         CrewmateWinAccolade.Award(NewAgent)
+
+                        if(SelectedPlayerReference := PlayerReferences[PlayerIndex]):
+                            SelectedPlayerReference.Register(NewAgent)
                         
                         if(PlayerIndex = 1):
                             CrewmateWinAnalytic.Submit(NewAgent)
@@ -424,9 +423,9 @@ game_manager_device := class(creative_device):
                         set PlayerIndex += 1
                     else:
                         DefeatHudDevice.Show(NewAgent)
-
+                        
+        # TeleportPlayersToEnd();
         GameEnded.Signal()
-        SequencerDevice.Play()
 
         EndgameCamera.AddToAll()
 
@@ -443,14 +442,23 @@ game_manager_device := class(creative_device):
         AudioPlayer.Play()
 
         for(CreativeObject : FindCreativeObjectsWithTag(VotingDeviceTag{})):
-            if:
-                VotingDevice := voting_device[CreativeObject]
-            then:
+            if(VotingDevice := voting_device[CreativeObject]):
                 VotingDevice.AddUI(Agent)
 
-                # Teleport the player to the meeting table when something is reported
-                for (Player : GetPlayspace().GetParticipants()):
-                    if:
-                        NewAgent := agent[Player]
-                    then:
-                        StartTeleporter.Teleport(NewAgent)
+        # Teleport the player to the meeting table when something is reported
+        for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
+            if(PlayerManager := player_manager_device[CreativeObject]):
+                PlayerManager.TeleportPlayersToStart()
+
+    TeleportPlayersToEnd(): void=
+        var TeleportIndex: int = 0;
+        var LoopingIndex: int = 0;
+
+        for(Agent : GetPlayspace().GetParticipants()):
+            if(Teleporter := Teleporters[TeleportIndex]):
+                Teleporter.Teleport(Agent)
+                set LoopingIndex += 1
+
+            if(LoopingIndex = 2):
+                set TeleportIndex += 1
+                set LoopingIndex = 0

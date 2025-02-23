@@ -57,13 +57,11 @@ voting_device := class(creative_device):
                 Print("VotingDevice After Await")
                 set CustomPlayers = PlayerManager.CustomPlayers
 
-        for (Player : GetPlayspace().GetParticipants()):
-            if:
-                Character := Player.GetFortCharacter[]
-                NewAgent := Character.GetAgent[]
-                
-                # Created empty player classes
-                set Players[NewAgent] = voteable_player{}
+        # Created empty player classes
+        for (NewAgent : GetPlayspace().GetParticipants()):
+            if(set Players[NewAgent] = voteable_player{}):
+
+        Print("Voteable Players: {Players.Length}")
 
     HandleUserVote(VotedForAgent: agent, Message: widget_message): void=
         if:
@@ -104,7 +102,7 @@ voting_device := class(creative_device):
 
         for (NewAgent : GetPlayspace().GetParticipants()):
             if:
-                Player := player[Agent]
+                Player := player[NewAgent]
                 PlayerUI := GetPlayerUI[Player]
 
                 VoteablePlayer := Players[NewAgent]
@@ -137,12 +135,8 @@ voting_device := class(creative_device):
             Sleep(1.0)
             set RemainingTime = RemainingTime - 1
 
-            for (Player : GetPlayspace().GetParticipants()):
-                if:
-                    Character := Player.GetFortCharacter[]
-                    NewAgent := Character.GetAgent[]
-                    VoteablePlayer := Players[NewAgent]
-                then:
+            for (Agent : GetPlayspace().GetParticipants()):
+                if(VoteablePlayer := Players[Agent]):
                     VoteablePlayer.TimerText.SetText(StringToMessage("Voting Time: {RemainingTime}s"))
 
             if(TimerDuration = 0):
@@ -179,24 +173,24 @@ voting_device := class(creative_device):
 
         var ResultsCanvasItems: [agent]results_message = map{}
 
-        for(Key -> Player : Players):
+        for(VoteableAgent -> VoteablePlayer : Players):
             if:
-                set ResultsCanvasItems[Key] = results_message{}
-                CanvasItem := ResultsCanvasItems[Key]
+                set ResultsCanvasItems[VoteableAgent] = results_message{}
+                CanvasItem := ResultsCanvasItems[VoteableAgent]
             then:
-                if(Player.Votes > SkipVotes):
-                    if(Player.Votes > HighestVotes):
-                        CanvasItem.Text.SetText(AgentToMessage(Key, " was ejected!"))
-                        set HighestVotedPlayer = option{Key}
-                    else if(Player.Votes = HighestVotes):
+                if(VoteablePlayer.Votes > SkipVotes):
+                    if(VoteablePlayer.Votes > HighestVotes):
+                        CanvasItem.Text.SetText(AgentToMessage(VoteableAgent, " was ejected!"))
+                        set HighestVotedPlayer = option{VoteableAgent}
+                    else if(VoteablePlayer.Votes = HighestVotes):
                         CanvasItem.Text.SetText(StringToMessage("No one was ejected! (Tied)"))
                 else:
                     CanvasItem.Text.SetText(StringToMessage("No one was ejected! (Skipped)"))
 
-        for (Key -> Value : Players):
+        for (VoteableAgent -> VoteablePlayer : Players):
             if:
-                Player := player[Key]
-                CanvasItem := ResultsCanvasItems[Key]
+                Player := player[VoteableAgent]
+                CanvasItem := ResultsCanvasItems[VoteableAgent]
                 PlayerUI := GetPlayerUI[Player]
             then:
                 set CanvasItem.Canvas = canvas:
@@ -237,10 +231,10 @@ voting_device := class(creative_device):
 
         Sleep(3.0)
 
-        for (Key -> Value : Players):
+        for (VoteableAgent -> VoteablePlayer : Players):
             if:
-                Player := player[Key]
-                CanvasItem := ResultsCanvasItems[Key]
+                Player := player[VoteableAgent]
+                CanvasItem := ResultsCanvasItems[VoteableAgent]
                 PlayerUI := GetPlayerUI[Player]
             then:
                 PlayerUI.RemoveWidget(CanvasItem.Canvas)
@@ -253,10 +247,10 @@ voting_device := class(creative_device):
             if(GameManager := game_manager_device[CreativeObject]):
                 GameManager.CheckIfImpostersWon()
                 
-                for(Key -> Value : GameManager.EliminationCooldown):
-                    if(set GameManager.EliminationCooldown[Key] = ValueEliminationCooldown):
+                for(CooldownAgent -> CooldownInt : GameManager.EliminationCooldown):
+                    if(set GameManager.EliminationCooldown[CooldownAgent] = ValueEliminationCooldown):
                         spawn:
-                            GameManager.EliminationCooldownTimer(Key)
+                            GameManager.EliminationCooldownTimer(CooldownAgent)
 
     SetUserAsVoted(Message: widget_message): void=
         if:
@@ -307,21 +301,21 @@ voting_device := class(creative_device):
         SkipButton.SetText(StringToMessage("Skip"))
         SkipButton.OnClick().Subscribe(HandleSkip)
 
-        for(Key -> Value : Players):
+        for(VoteableAgent -> VoteablePlayer : Players):
             # Buttons
             Button: button_quiet = button_quiet{}
-            Button.SetText(AgentToMessage(Key, ""))
-            Button.OnClick().Subscribe(ButtonPressHandler{Device := Self, Agent := Key}.HandlerFunction)
-            if(set Buttons[Key] = Button){}
+            Button.SetText(AgentToMessage(VoteableAgent, ""))
+            Button.OnClick().Subscribe(ButtonPressHandler{Device := Self, Agent := VoteableAgent}.HandlerFunction)
+            if(set Buttons[VoteableAgent] = Button){}
              
             # Voted Images
             VotedImage: texture_block = texture_block{DefaultImage := Images.BlankImage}
-            if(set VotedImages[Key] = VotedImage){}
+            if(set VotedImages[VoteableAgent] = VotedImage){}
             
             # Dead Images
             DeadImage: texture_block = texture_block{DefaultImage := Images.BlankImage}
 
-            if(Value.IsDead = true):
+            if(VoteablePlayer.IsDead = true):
                 DeadImage.SetImage(InImage := Images.DeadLine)
 
             set DeadImages += array{DeadImage}
@@ -361,15 +355,28 @@ voting_device := class(creative_device):
 
             # Buttons
             for(Key -> Value : Buttons):
-                set Slots += array{
-                    canvas_slot:
-                        Anchors :=  anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
-                        Offsets := margin{Left := 0.0, Top := -385.0 + (Index * 80.0), Right := 420.0, Bottom := 65.0}
-                        Alignment := vector2{X := 0.5, Y := 0.5}
-                        ZOrder := 1
-                        SizeToContent := false
-                        Widget := Value
-                }
+                Print(AgentToMessage(Agent, "Buttons Index: {Index}"))
+
+                if(IsOdd[Index]):
+                    set Slots += array{
+                        canvas_slot:
+                            Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+                            Offsets := margin{Left := -200.0, Top := -330.0 + ((Index - 1) * 50.0), Right := 380.0, Bottom := 65.0}
+                            Alignment := vector2{X := 0.5, Y := 0.5}
+                            ZOrder := 1
+                            SizeToContent := false
+                            Widget := Value
+                    }
+                else:
+                    set Slots += array{
+                        canvas_slot:
+                            Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+                            Offsets := margin{Left := 230.0, Top := -330.0 + (Index * 50.0), Right := 380.0, Bottom := 65.0}
+                            Alignment := vector2{X := 0.5, Y := 0.5}
+                            ZOrder := 1
+                            SizeToContent := false
+                            Widget := Value
+                    }
 
                 set Index += 1
 
@@ -377,15 +384,26 @@ voting_device := class(creative_device):
 
             # Voted Images
             for(Key -> Value : VotedImages):
-                set Slots += array{
-                    canvas_slot:
-                        Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
-                        Offsets := margin{Left := 200.0, Top := -415.0 + (Index * 80.0), Right := 50.0, Bottom := 50.0}
-                        Alignment := vector2{X := 0.5, Y := 0.5}
-                        ZOrder := 2
-                        SizeToContent := false
-                        Widget := Value
-                }
+                if(IsOdd[Index]):
+                    set Slots += array{
+                        canvas_slot:
+                            Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+                            Offsets := margin{Left := -22.0, Top := -350.0 + ((Index - 1) * 50.0), Right := 50.0, Bottom := 50.0}
+                            Alignment := vector2{X := 0.5, Y := 0.5}
+                            ZOrder := 2
+                            SizeToContent := false
+                            Widget := Value
+                    }
+                else:
+                    set Slots += array{
+                        canvas_slot:
+                            Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+                            Offsets := margin{Left := 400.0, Top := -350.0 + (Index * 50.0), Right := 50.0, Bottom := 50.0}
+                            Alignment := vector2{X := 0.5, Y := 0.5}
+                            ZOrder := 2
+                            SizeToContent := false
+                            Widget := Value
+                    }
 
                 set Index += 1
 
@@ -393,17 +411,26 @@ voting_device := class(creative_device):
             
             # Dead Images
             for(Key -> Value : DeadImages):
-                set Slots += array{
-                    canvas_slot:
-                        Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
-                        Offsets := margin{Left := -5.0, Top := -385.0 + (Index * 80.0), Right := 260.0, Bottom := 3.0}
-                        Alignment := vector2{X := 0.5, Y := 0.5}
-                        ZOrder := 2
-                        SizeToContent := false
-                        Widget := Value
-                }
-
-                set Index += 1
+                if(IsOdd[Index]):
+                    set Slots += array{
+                        canvas_slot:
+                            Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+                            Offsets := margin{Left := -200.0, Top := -330.0 + ((Index - 1) * 50.0), Right := 260.0, Bottom := 3.0}
+                            Alignment := vector2{X := 0.5, Y := 0.5}
+                            ZOrder := 1
+                            SizeToContent := false
+                            Widget := Value
+                    }
+                else:
+                    set Slots += array{
+                        canvas_slot:
+                            Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+                            Offsets := margin{Left := 230.0, Top := -330.0 + (Index * 50.0), Right := 260.0, Bottom := 3.0}
+                            Alignment := vector2{X := 0.5, Y := 0.5}
+                            ZOrder := 1
+                            SizeToContent := false
+                            Widget := Value
+                    }
 
         # Create the main UI canvas
         return canvas{ Slots := Slots }

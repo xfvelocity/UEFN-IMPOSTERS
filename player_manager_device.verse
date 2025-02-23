@@ -60,8 +60,6 @@ player_manager_device := class(creative_device):
     PlayerCounter5: player_counter_device = player_counter_device{}
     @editable
     PlayerCounter10: player_counter_device = player_counter_device{}
-    @editable
-    SpectateButton: button_device = button_device{}
 
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
     var CustomPlayers: [player]custom_player = map{}
@@ -101,28 +99,28 @@ player_manager_device := class(creative_device):
             PlayerUI.AddWidget(canvas{ Slots := Slots })
 
     ManualOverride(Agent: agent): void=
-        Timer.SetActiveDuration(15.0)
+        Timer.SetActiveDuration(ValuePregameWaitingTime)
         Timer.Start();
 
         spawn:
             HandleRemovePlayercountUI()
 
     Players5Reached(): void=
-        Timer.SetActiveDuration(15.0)
+        Timer.SetActiveDuration(ValuePregameWaitingTime)
         Timer.Start();
 
         spawn:
             HandleRemovePlayercountUI()
 
     Players10Reached(): void=
-        Timer.SetActiveDuration(15.0)
+        Timer.SetActiveDuration(ValuePregameWaitingTime)
         Timer.Start();
 
         spawn:
             HandleRemovePlayercountUI()
 
     HandleRemovePlayercountUI()<suspends>: void=
-        Sleep(5.0)
+        Sleep(1.0)
         RemovePlayercountUI();
     
     PlayerJoined(Agent: agent): void=
@@ -247,13 +245,14 @@ player_manager_device := class(creative_device):
         PlayerCount: int = Agents.Length
         PlayerStatsManager.InitAllPlayers(Agents)
 
-        Print("{PlayerCount}")
+        Print("PlayerCount: {PlayerCount}")
 
         for(Agent : Agents):
             if:
                 Player := player[Agent]
                 set CustomPlayers[Player] = custom_player{}
             then:
+                Print("Custom Players: {CustomPlayers.Length}")
 
             if(PlayerIndex = 1):
                 if(PlayerCount = 1):
@@ -285,6 +284,9 @@ player_manager_device := class(creative_device):
         Print("PlayersSet.Signal after")
         set GameHasStarted = true
 
+        TeleportPlayersToStart();
+
+    TeleportPlayersToStart(): void=
         var TeleportIndex: int = 0;
         var LoopingIndex: int = 0;
 
@@ -297,11 +299,9 @@ player_manager_device := class(creative_device):
                 PlayerUI.RemoveWidget(SelectedCanvas)
 
             if(Teleporter := Teleporters[TeleportIndex]):
-                Print("Teleporter found at index {TeleportIndex}")
                 Teleporter.Teleport(Agent)
                 set LoopingIndex += 1
 
             if(LoopingIndex = 2):
                 set TeleportIndex += 1
                 set LoopingIndex = 0
-            
