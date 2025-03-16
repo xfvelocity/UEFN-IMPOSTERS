@@ -287,6 +287,9 @@ game_manager_device := class(creative_device):
                 else:
                     set SurvivingCrewmates += 1
 
+        Print("Surviving Crewmates: {SurvivingCrewmates}")
+        Print("Surviving Imposters: {SurvivingImposters}")
+
         if:
             SurvivingImposters = 0
         then:

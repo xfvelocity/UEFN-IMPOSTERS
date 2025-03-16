@@ -25,14 +25,6 @@ custom_player := class<concrete>:
 
 player_count_stats := class:
     @editable
-    PlayerCount1: analytics_device = analytics_device{}
-    @editable
-    PlayerCount2: analytics_device = analytics_device{}
-    @editable
-    PlayerCount3: analytics_device = analytics_device{}
-    @editable
-    PlayerCount4: analytics_device = analytics_device{}
-    @editable
     PlayerCount5: analytics_device = analytics_device{}
     @editable
     PlayerCount6: analytics_device = analytics_device{}
@@ -60,6 +52,8 @@ player_manager_device := class(creative_device):
     PlayerCounter5: player_counter_device = player_counter_device{}
     @editable
     PlayerCounter10: player_counter_device = player_counter_device{}
+    @editable
+    ItemRemover: item_remover_device = item_remover_device{}
 
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
     var CustomPlayers: [player]custom_player = map{}
@@ -113,7 +107,7 @@ player_manager_device := class(creative_device):
             HandleRemovePlayercountUI()
 
     Players10Reached(): void=
-        Timer.SetActiveDuration(ValuePregameWaitingTime)
+        Timer.SetActiveDuration(10.0)
         Timer.Start();
 
         spawn:
@@ -152,7 +146,7 @@ player_manager_device := class(creative_device):
             Agent := agent[Player]
         then:
             Text :=  text_block{DefaultTextColor := White, DefaultJustification := text_justification.Center}
-            Text.SetText(StringToMessage("Waiting for at least 5 players before starting"))
+            Text.SetText(StringToMessage("Waiting for at least 4 players before starting"))
             
             var Slots: []canvas_slot = array{
                 canvas_slot:
@@ -248,6 +242,8 @@ player_manager_device := class(creative_device):
         Print("PlayerCount: {PlayerCount}")
 
         for(Agent : Agents):
+            ItemRemover.Remove(Agent)
+
             if:
                 Player := player[Agent]
                 set CustomPlayers[Player] = custom_player{}
@@ -255,15 +251,7 @@ player_manager_device := class(creative_device):
                 Print("Custom Players: {CustomPlayers.Length}")
 
             if(PlayerIndex = 1):
-                if(PlayerCount = 1):
-                    PlayerCountStats.PlayerCount1.Submit(Agent)
-                else if(PlayerCount = 2):
-                    PlayerCountStats.PlayerCount2.Submit(Agent)
-                else if(PlayerCount = 3):
-                    PlayerCountStats.PlayerCount3.Submit(Agent)
-                else if(PlayerCount = 4):
-                    PlayerCountStats.PlayerCount4.Submit(Agent)
-                else if(PlayerCount = 5):
+                if(PlayerCount = 5):
                     PlayerCountStats.PlayerCount5.Submit(Agent)
                 else if(PlayerCount = 6):
                     PlayerCountStats.PlayerCount6.Submit(Agent)
@@ -283,6 +271,7 @@ player_manager_device := class(creative_device):
         PlayersSet.Signal()
         Print("PlayersSet.Signal after")
         set GameHasStarted = true
+
 
         TeleportPlayersToStart();
 
