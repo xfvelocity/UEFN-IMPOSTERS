@@ -445,15 +445,15 @@ tasks_device := class(creative_device):
                 
                 var Slots: []canvas_slot = array{
                     canvas_slot:
-                        Anchors :=  anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 0.0, Y := 0.0}}
-                        Offsets := margin{Left := 15.0, Top := 15.0, Right := 550.0, Bottom := 380.0}
+                        Anchors := anchors{Minimum := vector2{X := 1.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 0.0}}
+                        Offsets := margin{Left := -575.0, Top := 15.0, Right := 550.0, Bottom := 380.0}
                         Alignment := vector2{X := 0.0, Y := 0.0}
                         ZOrder := 0
                         SizeToContent := false
                         Widget := SelectedCanvas.BackgroundImage
                     canvas_slot:
-                        Anchors :=  anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 0.0, Y := 0.0}}
-                        Offsets := margin{Left := 35.0, Top := 35.0 , Right := 0.0, Bottom := 0.0}
+                        Anchors := anchors{Minimum := vector2{X := 1.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 0.0}}
+                        Offsets := margin{Left := -555.0, Top := 35.0 , Right := 0.0, Bottom := 0.0}
                         Alignment := vector2{X := 0.0, Y := 0.0}
                         ZOrder := 1
                         SizeToContent := false
@@ -468,8 +468,8 @@ tasks_device := class(creative_device):
 
                         set Slots += array{
                             canvas_slot:
-                                Anchors := anchors{Minimum := vector2{X := 0.0, Y := 0.0}, Maximum := vector2{X := 0.0, Y := 0.0}}
-                                Offsets := margin{Left := 35.0, Top := 90.0 + (TextBlockIndex * 40.0), Right := 0.0, Bottom := 0.0}
+                                Anchors := anchors{Minimum := vector2{X := 1.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 0.0}}
+                                Offsets := margin{Left := -555.0, Top := 90.0 + (TextBlockIndex * 40.0), Right := 0.0, Bottom := 0.0}
                                 Alignment := vector2{X := 0.0, Y := 0.0}
                                 ZOrder := 1
                                 SizeToContent := false

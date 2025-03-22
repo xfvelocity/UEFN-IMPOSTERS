@@ -25,6 +25,8 @@ custom_player := class<concrete>:
 
 player_count_stats := class:
     @editable
+    PlayerCount4: analytics_device = analytics_device{}
+    @editable
     PlayerCount5: analytics_device = analytics_device{}
     @editable
     PlayerCount6: analytics_device = analytics_device{}
@@ -38,131 +40,60 @@ player_count_stats := class:
     PlayerCount10: analytics_device = analytics_device{}
 
 player_manager_device := class(creative_device):
-    @editable 
-    VotingTable: creative_prop = creative_prop{}
     @editable
     PlayerCountStats: player_count_stats = player_count_stats{}
-    @editable
-    OverrideButton: button_device = button_device{}
     @editable
     Timer: timer_device = timer_device{}
     @editable
     Teleporters: []teleporter_device = array{}
     @editable
-    PlayerCounter5: player_counter_device = player_counter_device{}
+    PlayerCounter4: player_counter_device = player_counter_device{}
     @editable
     PlayerCounter10: player_counter_device = player_counter_device{}
     @editable
     ItemRemover: item_remover_device = item_remover_device{}
+    @editable
+    WaitingForPlayersHUD: hud_message_device = hud_message_device{}
+    @editable
+    GameInProgressHUD: hud_message_device = hud_message_device{}
+    @editable
+    JoinInProgressDevice: analytics_device = analytics_device{}
 
     PlayerStatsManager: player_stats_manager = player_stats_manager{}
     var CustomPlayers: [player]custom_player = map{}
     var PlayersSet: event() = event(){}
     var StatsUICanvas: [agent]canvas = map{}
     var GameHasStarted: logic = false
-    var PlayerCountCanvas: [agent]canvas = map{}
 
     OnBegin<override>()<suspends>: void=
         Timer.SuccessEvent.Subscribe(OnStartGame)
-        OverrideButton.InteractedWithEvent.Subscribe(ManualOverride)
 
         PlayerCounter10.CountedEvent.Subscribe(PlayerJoined)
         PlayerCounter10.RemovedEvent.Subscribe(PlayerLeft)
 
-        PlayerCounter5.CountSucceedsEvent.Subscribe(Players5Reached)
+        PlayerCounter4.CountSucceedsEvent.Subscribe(Players4Reached)
         PlayerCounter10.CountSucceedsEvent.Subscribe(Players10Reached)
 
-    GameStartedUI(Agent: agent): void=
-        if:
-            Player := player[Agent]
-            PlayerUI := GetPlayerUI[Player]
-        then:
-            Text :=  text_block{DefaultTextColor := White, DefaultJustification := text_justification.Center}
-            Text.SetText(StringToMessage("Game has already started. You will join the next game."))
-            
-            var Slots: []canvas_slot = array{
-                canvas_slot:
-                    Anchors :=  anchors{Minimum := vector2{X := 0.5, Y := 1.0}, Maximum := vector2{X := 0.5, Y := 1.0}}
-                    Offsets := margin{Left := 0.0, Top := -100.0 , Right := 0.0, Bottom := 0.0}
-                    Alignment := vector2{X := 0.0, Y := 0.0}
-                    ZOrder := 1
-                    SizeToContent := false
-                    Widget := Text
-            }
-                
-            PlayerUI.AddWidget(canvas{ Slots := Slots })
-
-    ManualOverride(Agent: agent): void=
+    Players4Reached(): void=
         Timer.SetActiveDuration(ValuePregameWaitingTime)
         Timer.Start();
-
-        spawn:
-            HandleRemovePlayercountUI()
-
-    Players5Reached(): void=
-        Timer.SetActiveDuration(ValuePregameWaitingTime)
-        Timer.Start();
-
-        spawn:
-            HandleRemovePlayercountUI()
+        WaitingForPlayersHUD.Show()
 
     Players10Reached(): void=
         Timer.SetActiveDuration(10.0)
         Timer.Start();
+        WaitingForPlayersHUD.Hide()
 
-        spawn:
-            HandleRemovePlayercountUI()
-
-    HandleRemovePlayercountUI()<suspends>: void=
-        Sleep(1.0)
-        RemovePlayercountUI();
-    
     PlayerJoined(Agent: agent): void=
-
         if:
             GameHasStarted = true
         then:
-            GameStartedUI(Agent)
-        else if(Player := player[Agent]):
+            Print("GameHasStarted")
+            JoinInProgressDevice.Submit(Agent)
+            GameInProgressHUD.Show(Agent)
+        else:
             StatsUI(Agent)
-            PlayerCountUI(Player);
-
-    RemovePlayercountUI(): void=
-        for(Agent : GetPlayspace().GetParticipants()):
-            if:
-                Player := player[Agent]
-                PlayerUI := GetPlayerUI[Player]
-                SelectedPlayerCountCanvas := PlayerCountCanvas[Agent]
-            then:
-                PlayerUI.RemoveWidget(SelectedPlayerCountCanvas);
-
-    PlayerCountUI(Player: player) :void=
-        if:
-            Agent := agent[Player]
-            PlayerCountCanvas[Agent]
-        then:
-        else if:
-            PlayerUI := GetPlayerUI[Player]
-            Agent := agent[Player]
-        then:
-            Text :=  text_block{DefaultTextColor := White, DefaultJustification := text_justification.Center}
-            Text.SetText(StringToMessage("Waiting for at least 4 players before starting"))
-            
-            var Slots: []canvas_slot = array{
-                canvas_slot:
-                    Anchors :=  anchors{Minimum := vector2{X := 0.5, Y := 1.0}, Maximum := vector2{X := 0.5, Y := 1.0}}
-                    Offsets := margin{Left := 0.0, Top := -100.0 , Right := 0.0, Bottom := 0.0}
-                    Alignment := vector2{X := 0.0, Y := 0.0}
-                    ZOrder := 1
-                    SizeToContent := false
-                    Widget := Text
-            }
-                
-            if:
-                set PlayerCountCanvas[Agent] = canvas{ Slots := Slots }
-                SelectedCanvas := PlayerCountCanvas[Agent]
-            then:
-                PlayerUI.AddWidget(SelectedCanvas)
+            WaitingForPlayersHUD.Show()
 
     StatsUI(Agent: agent) :void=
         if(StatsUICanvas[Agent]):
@@ -178,14 +109,14 @@ player_manager_device := class(creative_device):
 
                 var Slots: []canvas_slot = array{
                     canvas_slot:
-                        Anchors :=  anchors{Minimum := vector2{X := 1.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 0.0}}
+                        Anchors := anchors{Minimum := vector2{X := 1.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 0.0}}
                         Offsets := margin{Left := -575.0, Top := 15.0, Right := 550.0, Bottom := 380.0}
                         Alignment := vector2{X := 0.0, Y := 0.0}
                         ZOrder := 0
                         SizeToContent := false
                         Widget := BackgroundImage
                     canvas_slot:
-                        Anchors :=  anchors{Minimum := vector2{X := 1.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 0.0}}
+                        Anchors := anchors{Minimum := vector2{X := 1.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 0.0}}
                         Offsets := margin{Left := -555.0, Top := 35.0 , Right := 0.0, Bottom := 0.0}
                         Alignment := vector2{X := 0.0, Y := 0.0}
                         ZOrder := 1
@@ -200,7 +131,7 @@ player_manager_device := class(creative_device):
 
                     set Slots += array{
                         canvas_slot:
-                            Anchors :=  anchors{Minimum := vector2{X := 1.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 0.0}}
+                            Anchors := anchors{Minimum := vector2{X := 1.0, Y := 0.0}, Maximum := vector2{X := 1.0, Y := 0.0}}
                             Offsets := margin{Left := -555.0, Top := 90.0 + (TextBlockIndex * 40.0), Right := 0.0, Bottom := 0.0}
                             Alignment := vector2{X := 0.0, Y := 0.0}
                             ZOrder := 1
@@ -272,7 +203,7 @@ player_manager_device := class(creative_device):
         Print("PlayersSet.Signal after")
         set GameHasStarted = true
 
-
+        WaitingForPlayersHUD.Hide();
         TeleportPlayersToStart();
 
     TeleportPlayersToStart(): void=
