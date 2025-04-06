@@ -66,13 +66,18 @@ player_manager_device := class(creative_device):
     var GameHasStarted: logic = false
 
     OnBegin<override>()<suspends>: void=
-        Timer.SuccessEvent.Subscribe(OnStartGame)
+        # Fortnite pregame
+        Timer.Disable()
+        StartGame()
 
-        PlayerCounter10.CountedEvent.Subscribe(PlayerJoined)
-        PlayerCounter10.RemovedEvent.Subscribe(PlayerLeft)
+        # Custom pregame code
+        # Timer.SuccessEvent.Subscribe(OnStartGame)
 
-        PlayerCounter4.CountSucceedsEvent.Subscribe(Players4Reached)
-        PlayerCounter10.CountSucceedsEvent.Subscribe(Players10Reached)
+        # PlayerCounter10.CountedEvent.Subscribe(PlayerJoined)
+        # PlayerCounter10.RemovedEvent.Subscribe(PlayerLeft)
+
+        # PlayerCounter4.CountSucceedsEvent.Subscribe(Players4Reached)
+        # PlayerCounter10.CountSucceedsEvent.Subscribe(Players10Reached)
 
     Players4Reached(): void=
         Timer.SetActiveDuration(ValuePregameWaitingTime)
@@ -104,7 +109,7 @@ player_manager_device := class(creative_device):
                 CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[Agent]
             then:
                 var Stats: [string]string = map{"Eliminations" => "{CurrentPlayerStats.Kills}", "Tasks Completed" => "{CurrentPlayerStats.TasksCompleted}", "Imposter Wins" => "{CurrentPlayerStats.ImposterWins}/{CurrentPlayerStats.ImposterPlays}", "Crewmate Wins" => "{CurrentPlayerStats.CrewmateWins}/{CurrentPlayerStats.CrewmatePlays}"}
-                var BackgroundImage: texture_block = texture_block{DefaultImage := Images.OpaqueBackground}
+                var BackgroundImage: texture_block = texture_block{DefaultImage := Images.T_OpaqueBackground}
                 var TitleText: text_block = text_block{DefaultText := StringToMessage("Lifetime Stats:"), DefaultTextColor := White}
 
                 var Slots: []canvas_slot = array{
@@ -204,7 +209,8 @@ player_manager_device := class(creative_device):
         set GameHasStarted = true
 
         WaitingForPlayersHUD.Hide();
-        TeleportPlayersToStart();
+        # Custom pregame code
+        # TeleportPlayersToStart();
 
     TeleportPlayersToStart(): void=
         var TeleportIndex: int = 0;

@@ -21,7 +21,7 @@ TaskHandler := class:
 
 task_ui := class<concrete>:
     var Canvas: canvas = canvas{}
-    var BackgroundImage: texture_block = texture_block{DefaultImage := Images.OpaqueBackground}
+    var BackgroundImage: texture_block = texture_block{DefaultImage := Images.T_OpaqueBackground}
     var TextBlocks: [Task]text_block = map{}
 
 Task := enum{AdminUpload, CaffeteriaDownload, CommunicationsDownload, ElectricalDownload, NavDownload, WeaponsDownload, AdminSwipe, ElectricalSwipe, ElectricalCalibration, LowerEngineSwipe, NavigationSwipe, WeaponsShooting, StorageFuel}
@@ -506,7 +506,7 @@ tasks_device := class(creative_device):
             PlayerUI := GetPlayerUI[Player]
         then:
             var Canvas: canvas = canvas{}
-            var BackgroundImage: texture_block = texture_block{DefaultImage := Images.TabletBackground}
+            var BackgroundImage: texture_block = texture_block{DefaultImage := Images.T_TabletBackground}
             var Text: text_block = text_block{DefaultJustification := text_justification.Center}
 
             if(Uploading = true):

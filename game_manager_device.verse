@@ -17,13 +17,12 @@ TeamDeviceTag := class(tag):
 
 # Variables
 ValueEliminationCooldown: int = 35
-ValueEmergencyButtonCooldown: int = 25
 ValueVotingTime: int = 60
 ValuePregameWaitingTime: float = 60.0
 
 # Testing Variables
 # ValueEliminationCooldown: int = 3
-# ValueEmergencyButtonCooldown: int = 3
+# ValueEmergencyButtonCooldown: float = 3.0
 # ValueVotingTime: int = 10
 # ValuePregameWaitingTime: float = 3.0
 
@@ -54,7 +53,9 @@ game_manager_device := class(creative_device):
     @editable 
     EmergencyButton: button_device = button_device{}
     @editable
-    AudioPlayer: audio_player_device = audio_player_device{}
+    ReportedSound: audio_player_device = audio_player_device{}
+    @editable
+    EmergencySound: audio_player_device = audio_player_device{}
     @editable
     FollowProps: []follow_prop = array{}
     @editable
@@ -91,6 +92,8 @@ game_manager_device := class(creative_device):
     Teleporters: []teleporter_device = array{}
     @editable
     PlayerReferences: []player_reference_device = array{}
+    @editable
+    EmergencyButtonTimer: timer_device = timer_device{}
 
     var CustomPlayers: [player]custom_player = map{}
     var GameEnded: event() = event(){}
@@ -111,9 +114,8 @@ game_manager_device := class(creative_device):
                 Print("GameManagerDevice After Await")
                 set CustomPlayers = PlayerManager.CustomPlayers
 
-            spawn:
-                AsyncCountdown()
-
+        EmergencyButton.Disable()
+        EmergencyButtonTimer.SuccessEvent.Subscribe(EmergencyButtonCooldownTimerComplete)
         EmergencyButton.InteractedWithEvent.Subscribe(EmergencyButtonPressed)
 
         # Setup elimination watchers for players
@@ -132,7 +134,7 @@ game_manager_device := class(creative_device):
                     set EliminationCooldown[Agent] = ValueEliminationCooldown
                 then:
                     TextBlock := text_block{DefaultJustification := text_justification.Center, DefaultTextColor := White}
-                    Icon := texture_block{DefaultImage := Images.EliminationCooldownActive}
+                    Icon := texture_block{DefaultImage := Images.T_EliminationCooldownActive}
                     TextBlock.SetText(StringToMessage("{ValueEliminationCooldown}s"))
 
                     if(set EliminationCooldownText[Agent] = TextBlock):
@@ -163,6 +165,10 @@ game_manager_device := class(creative_device):
         SetupProps()
         HandleFollowProps()
 
+    EmergencyButtonCooldownTimerComplete(MaybeAgent: ?agent): void=
+        set EmergencyButtonCooldownComplete = true
+        EmergencyButton.Enable()
+
     EliminationCooldownTimer(Agent: agent)<suspends>: void=
         if(Cooldown := EliminationCooldown[Agent]):
             var RemainingTime: int = Cooldown
@@ -185,6 +191,8 @@ game_manager_device := class(creative_device):
             PlayerUI := GetPlayerUI[Player]
         then:
             if(HasUsedEmergency[Agent] = false and EmergencyButtonCooldownComplete = true):
+                EmergencySound.Play()
+
                 if:
                     set HasUsedEmergency[Agent] = true
                     SelectedEmergencyButtonCanvas := EmergencyButtonCanvas[Agent]
@@ -225,31 +233,6 @@ game_manager_device := class(creative_device):
         Sleep(3.0)
 
         PlayerUI.RemoveWidget(Canvas)
-
-    AsyncCountdown()<suspends>:void=
-        var RemainingTime: int = ValueEmergencyButtonCooldown
-
-        loop:
-            for (Agent : GetPlayspace().GetParticipants()):
-                if(SelectedEmergencyButtonText := EmergencyButtonText[Agent]):
-                    SelectedEmergencyButtonText.SetText(StringToMessage("Button is on cooldown: {RemainingTime}s"))
-
-            Sleep(1.0)
-            set RemainingTime = RemainingTime - 1
-
-            if(RemainingTime <= 0):
-                set EmergencyButtonCooldownComplete = true
-
-                for (Agent : GetPlayspace().GetParticipants()):
-                    if:
-                        Player := player[Agent]
-                        PlayerUI := GetPlayerUI[Player]
-    
-                        SelectedEmergencyButtonCanvas := EmergencyButtonCanvas[Agent]
-                    then:
-                        PlayerUI.RemoveWidget(SelectedEmergencyButtonCanvas)
-
-                break;
 
     SetupProps(): void=
         var PropsIndex: int = 0
@@ -448,7 +431,7 @@ game_manager_device := class(creative_device):
                 EndGameDevice.Activate(Agent)
     
     Reported(Agent: agent): void=
-        AudioPlayer.Play()
+        ReportedSound.Play()
 
         for(CreativeObject : FindCreativeObjectsWithTag(VotingDeviceTag{})):
             if(VotingDevice := voting_device[CreativeObject]):

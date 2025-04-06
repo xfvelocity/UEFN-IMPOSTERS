@@ -21,7 +21,7 @@ ButtonPressHandler := class:
         Device.HandleUserVote(Agent, Message)
 
 results_message := class:
-    var BackgroundImage: texture_block = texture_block{DefaultImage := Images.SpaceBackground}
+    var BackgroundImage: texture_block = texture_block{DefaultImage := Images.T_SimpleSpaceBackground}
     var Text: text_block = text_block{DefaultTextColor := White, DefaultJustification := text_justification.Center}
     var Canvas: canvas = canvas{}
 
@@ -34,7 +34,7 @@ voteable_player := class:
     var Canvas: canvas = canvas{}
     var TimerText: text_block = text_block{}
     var SkipButton: button_quiet = button_quiet{}
-    var BackdropImage: texture_block = texture_block{DefaultImage := Images.TabletBackground}
+    var BackdropImage: texture_block = texture_block{DefaultImage := Images.T_TabletBackground}
 
 voting_device := class(creative_device):
     @editable
@@ -89,7 +89,7 @@ voting_device := class(creative_device):
                         VoteablePlayer := Players[VotedImagesKey]
                         VoteablePlayer.HasVoted = true
                     then:
-                        VotedImagesValue.SetImage(InImage := Images.Voted)
+                        VotedImagesValue.SetImage(InImage := Images.T_Voted)
 
             if(VotedUsersCount = Players.Length):
                 spawn:
@@ -156,7 +156,7 @@ voting_device := class(creative_device):
                 Value.SkipButton.SetText(StringToMessage("Skip ({SkipVotes})"))
 
                 for(VotedImagesKey -> VotedImagesValue : Value.VotedImages):
-                    VotedImagesValue.SetImage(InImage := Images.BlankImage)
+                    VotedImagesValue.SetImage(InImage := Images.T_Blank)
 
         set TimerDuration = 0
         set VotedUsersCount = 0
@@ -258,8 +258,10 @@ voting_device := class(creative_device):
 
         for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
             if(GameManager := game_manager_device[CreativeObject]):
+                GameManager.EmergencyButtonTimer.Reset()
+                GameManager.EmergencyButtonTimer.Start()
                 GameManager.CheckIfImpostersWon()
-                
+
                 for(CooldownAgent -> CooldownInt : GameManager.EliminationCooldown):
                     if(set GameManager.EliminationCooldown[CooldownAgent] = ValueEliminationCooldown):
                         spawn:
@@ -283,7 +285,7 @@ voting_device := class(creative_device):
                 for(VotedImagesKey -> VotedImagesValue : VoteablePlayer.VotedImages):
                      # If the player has voted, update the voted image
                     if(VotedPlayer := Players[VotedImagesKey], VotedPlayer.HasVoted = true):
-                        VotedImagesValue.SetImage(InImage := Images.Voted)
+                        VotedImagesValue.SetImage(InImage := Images.T_Voted)
 
             if(VotedUsersCount = Players.Length):
                 spawn:
@@ -308,7 +310,7 @@ voting_device := class(creative_device):
         var DeadImages: []texture_block = array{}
         var TimerText: text_block = text_block{}
         var SkipButton: button_quiet = button_quiet{}
-        var BackdropImage: texture_block = texture_block{DefaultImage := Images.TabletBackground}
+        var BackdropImage: texture_block = texture_block{DefaultImage := Images.T_TabletBackground}
 
         TimerText.SetText(StringToMessage("Voting Time: {TimerDuration}s"))
         SkipButton.SetText(StringToMessage("Skip"))
@@ -322,14 +324,14 @@ voting_device := class(creative_device):
             if(set Buttons[VoteableAgent] = Button){}
              
             # Voted Images
-            VotedImage: texture_block = texture_block{DefaultImage := Images.BlankImage}
+            VotedImage: texture_block = texture_block{DefaultImage := Images.T_Blank}
             if(set VotedImages[VoteableAgent] = VotedImage){}
             
             # Dead Images
-            DeadImage: texture_block = texture_block{DefaultImage := Images.BlankImage}
+            DeadImage: texture_block = texture_block{DefaultImage := Images.T_Blank}
 
             if(VoteablePlayer.IsDead = true):
-                DeadImage.SetImage(InImage := Images.DeadLine)
+                DeadImage.SetImage(InImage := Images.T_DeadLine)
 
             set DeadImages += array{DeadImage}
             
