@@ -35,6 +35,7 @@ voteable_player := class:
     var TimerText: text_block = text_block{}
     var SkipButton: button_quiet = button_quiet{}
     var BackdropImage: texture_block = texture_block{DefaultImage := Images.T_TabletBackground}
+    var MegaphoneImages: [agent]texture_block = map{}
 
 voting_device := class(creative_device):
     @editable
@@ -108,7 +109,7 @@ voting_device := class(creative_device):
             then:
                 InitializeTimerUI(VoteablePlayer)
 
-                set VoteablePlayer.Canvas = CreateUI(NewAgent)
+                set VoteablePlayer.Canvas = CreateUI(NewAgent, Agent)
                 
                 PlayerUI.AddWidget(VoteablePlayer.Canvas, player_ui_slot{InputMode := ui_input_mode.All})
 
@@ -303,7 +304,7 @@ voting_device := class(creative_device):
             set SkipVotes += 1
             SetUserAsVoted(Message)
 
-    CreateUI(Agent: agent): canvas=
+    CreateUI(Agent: agent, ReportedAgent: agent): canvas=
         var Slots: []canvas_slot = array{}
         var Buttons: [agent]button_quiet = map{}
         var VotedImages: [agent]texture_block = map{}
@@ -311,6 +312,8 @@ voting_device := class(creative_device):
         var TimerText: text_block = text_block{}
         var SkipButton: button_quiet = button_quiet{}
         var BackdropImage: texture_block = texture_block{DefaultImage := Images.T_TabletBackground}
+        # var MegaphoneImages: texture_block = texture_block{DefaultImage := Images.T_Megaphone}
+        var MegaphoneImages: [agent]texture_block = map{}
 
         TimerText.SetText(StringToMessage("Voting Time: {TimerDuration}s"))
         SkipButton.SetText(StringToMessage("Skip"))
@@ -333,6 +336,10 @@ voting_device := class(creative_device):
             if(VoteablePlayer.IsDead = true):
                 DeadImage.SetImage(InImage := Images.T_DeadLine)
 
+            # Megaphone Images
+            MegaphoneImage: texture_block = texture_block{DefaultImage := Images.T_Megaphone}
+            if(set MegaphoneImages[VoteableAgent] = MegaphoneImage){}
+            
             set DeadImages += array{DeadImage}
             
         if:
@@ -341,6 +348,7 @@ voting_device := class(creative_device):
             set Players[Agent].TimerText = TimerText
             set Players[Agent].SkipButton = SkipButton
             set Players[Agent].BackdropImage = BackdropImage
+            set Players[Agent].MegaphoneImages = MegaphoneImages
         then:
             var Index: int = 0;
 
@@ -368,10 +376,42 @@ voting_device := class(creative_device):
                     Widget := SkipButton
             }
 
+            # for(Key -> Value : MegaphoneImages):
+            #     # Show a megaphone image if the player is the agent who reported
+            #     if(Agent = ReportedAgent):
+            #         if(IsOdd[Index]):
+            #             set Slots += array{
+            #                 canvas_slot:
+            #                     Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+            #                     Offsets := margin{Left := -40.0, Top := -330.0 + ((Index - 1) * 50.0), Right := 30.0, Bottom := 30.0}
+            #                     Alignment := vector2{X := 0.5, Y := 0.5}
+            #                     ZOrder := 3
+            #                     SizeToContent := false
+            #                     Widget := Value
+            #             }
+            #         else:
+            #             set Slots += array{
+            #                 canvas_slot:
+            #                     Anchors := anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
+            #                     Offsets := margin{Left := 70.0, Top := -330.0 + (Index * 50.0), Right := 30.0, Bottom := 30.0}
+            #                     Alignment := vector2{X := 0.5, Y := 0.5}
+            #                     ZOrder := 3
+            #                     SizeToContent := false
+            #                     Widget := Value
+            #             }
+
+            #         set Index += 1
+
+            # set Index = 0
+
             # Buttons
             for(Key -> Value : Buttons):
                 Print(AgentToMessage(Agent, "Buttons Index: {Index}"))
 
+
+        
+
+                # Add voteable buttons
                 if(IsOdd[Index]):
                     set Slots += array{
                         canvas_slot:

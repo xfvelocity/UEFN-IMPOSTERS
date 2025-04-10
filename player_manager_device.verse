@@ -25,6 +25,12 @@ custom_player := class<concrete>:
 
 player_count_stats := class:
     @editable
+    PlayerCount1: analytics_device = analytics_device{}
+    @editable
+    PlayerCount2: analytics_device = analytics_device{}
+    @editable
+    PlayerCount3: analytics_device = analytics_device{}
+    @editable
     PlayerCount4: analytics_device = analytics_device{}
     @editable
     PlayerCount5: analytics_device = analytics_device{}
@@ -187,7 +193,15 @@ player_manager_device := class(creative_device):
                 Print("Custom Players: {CustomPlayers.Length}")
 
             if(PlayerIndex = 1):
-                if(PlayerCount = 5):
+                if(PlayerCount = 1):
+                    PlayerCountStats.PlayerCount1.Submit(Agent)
+                else if(PlayerCount = 2):
+                    PlayerCountStats.PlayerCount2.Submit(Agent)
+                else if(PlayerCount = 3):
+                    PlayerCountStats.PlayerCount3.Submit(Agent)
+                else if(PlayerCount = 4):
+                    PlayerCountStats.PlayerCount4.Submit(Agent)
+                else if(PlayerCount = 5):
                     PlayerCountStats.PlayerCount5.Submit(Agent)
                 else if(PlayerCount = 6):
                     PlayerCountStats.PlayerCount6.Submit(Agent)

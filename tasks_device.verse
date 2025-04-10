@@ -265,6 +265,9 @@ tasks_device := class(creative_device):
                     then:
                         MapIndicator.Enable()
 
+                        if(CustomPlayer.IsImposter = false):
+                            MapIndicator.ActivateObjectivePulse(Agent)
+
                         # Communications Download
                         if:
                             SelectedTask = Task.CommunicationsDownload
