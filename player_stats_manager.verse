@@ -35,44 +35,40 @@ player_stats_manager := class():
                 KillsStat := PlayerStatsTable.Kills
 
                 set PlayerStatsMap[Player] = player_stats_table:
-                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
                     Kills := KillsStat + Value
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
 
             if(Stat = StatType.ImposterPlays):
                 ImposterPlaysStat := PlayerStatsTable.ImposterPlays
 
                 set PlayerStatsMap[Player] = player_stats_table:
-                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
                     ImposterPlays := ImposterPlaysStat + Value
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
 
             if(Stat = StatType.ImposterWins):
                 ImposterWinsStat := PlayerStatsTable.ImposterWins
 
                 set PlayerStatsMap[Player] = player_stats_table:
-                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
                     ImposterWins := ImposterWinsStat + Value
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
 
             if(Stat = StatType.CrewmateWins):
                 CrewmateWinsStat := PlayerStatsTable.CrewmateWins
 
                 set PlayerStatsMap[Player] = player_stats_table:
-                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
                     CrewmateWins := CrewmateWinsStat + Value
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
 
             if(Stat = StatType.CrewmatePlays):
                 CrewmatePlaysStat := PlayerStatsTable.CrewmatePlays
 
                 set PlayerStatsMap[Player] = player_stats_table:
-                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
                     CrewmatePlays := CrewmatePlaysStat + Value
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
 
             if(Stat = StatType.TasksCompleted):
                 TasksCompletedStat := PlayerStatsTable.TasksCompleted
 
                 set PlayerStatsMap[Player] = player_stats_table:
-                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
                     TasksCompleted := TasksCompletedStat + Value
-
-
-
-
+                    MakePlayerStatsTable<constructor>(PlayerStatsTable)
