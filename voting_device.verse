@@ -51,7 +51,7 @@ voting_device := class(creative_device):
 
     OnBegin<override>()<suspends>:void=
         Print("VotingDevice OnBegin")
-        for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
+        for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag)):
             if(PlayerManager := player_manager_device[CreativeObject]):
                 PlayerManager.PlayersSet.Await()
                 Print("VotingDevice After Await")
@@ -257,7 +257,7 @@ voting_device := class(creative_device):
         set SkipVotes = 0;
         set TimerDuration = ValueVotingTime;
 
-        for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
+        for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag)):
             if(GameManager := game_manager_device[CreativeObject]):
                 GameManager.EmergencyButtonTimer.Reset()
                 GameManager.EmergencyButtonTimer.Start()

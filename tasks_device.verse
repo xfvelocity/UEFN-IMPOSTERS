@@ -176,7 +176,7 @@ tasks_device := class(creative_device):
 
     OnBegin<override>()<suspends>:void=
         Print("TasksDevice OnBegin")
-        for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
+        for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag)):
             if(PlayerManager := player_manager_device[CreativeObject]):
                 PlayerManager.PlayersSet.Await()
                 Print("TasksDevice After Await")
@@ -487,7 +487,7 @@ tasks_device := class(creative_device):
                 PlayerUI.AddWidget(SelectedCanvas.Canvas)
 
     RemoveUI()<suspends>: void=
-        for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
+        for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag)):
             for(Player -> CustomPlayer : CustomPlayers):
                 if:
                     PlayerUI := GetPlayerUI[Player]
@@ -633,7 +633,7 @@ tasks_device := class(creative_device):
                 set TasksPercentage = TaskPercentage
 
                 if(TasksPercentage = 100):
-                    for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
+                    for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag)):
                         if(GameManager := game_manager_device[CreativeObject]):
                             spawn:
                                 GameManager.HandleEndGame(true)

@@ -16,7 +16,7 @@ VotingDeviceTag := class(tag):
 TeamDeviceTag := class(tag):
 
 # Variables
-ValueEliminationCooldown: int = 35
+ValueEliminationCooldown: int = 45
 ValueVotingTime: int = 60
 ValuePregameWaitingTime: float = 60.0
 
@@ -108,7 +108,7 @@ game_manager_device := class(creative_device):
 
     OnBegin<override>()<suspends>:void=
         Print("GameManagerDevice OnBegin")
-        for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
+        for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag)):
             if(PlayerManager := player_manager_device[CreativeObject]):
                 PlayerManager.PlayersSet.Await()
                 Print("GameManagerDevice After Await")
@@ -137,9 +137,7 @@ game_manager_device := class(creative_device):
                     Icon := texture_block{DefaultImage := Images.T_EliminationCooldownActive}
                     TextBlock.SetText(StringToMessage("{ValueEliminationCooldown}s"))
 
-                    if(set EliminationCooldownText[Agent] = TextBlock):
-        
-                    var Canvas: canvas = canvas:
+                    Canvas := canvas:
                         Slots := array{
                             canvas_slot:
                                 Anchors :=  anchors{Minimum := vector2{X := 1.0, Y := 0.5}, Maximum := vector2{X := 1.0, Y := 0.5}}
@@ -156,8 +154,9 @@ game_manager_device := class(creative_device):
                                 SizeToContent := false
                                 Widget := TextBlock
                         }
-    
-                    PlayerUI.AddWidget(Canvas)
+
+                    if(set EliminationCooldownText[Agent] = TextBlock):
+                        PlayerUI.AddWidget(Canvas)
 
                     spawn:
                         EliminationCooldownTimer(Agent)
@@ -209,9 +208,7 @@ game_manager_device := class(creative_device):
                 if(HasUsedEmergency[Agent] = true):
                     TextBlock.SetText(StringToMessage("You have already used the emergency button!"))
     
-                if(set EmergencyButtonText[Agent] = TextBlock):
-    
-                var Canvas: canvas = canvas:
+                Canvas := canvas:
                     Slots := array{
                         canvas_slot:
                             Anchors :=  anchors{Minimum := vector2{X := 0.5, Y := 0.5}, Maximum := vector2{X := 0.5, Y := 0.5}}
@@ -222,8 +219,9 @@ game_manager_device := class(creative_device):
                             Widget := TextBlock
                     }
 
-                if(set EmergencyButtonCanvas[Agent] = Canvas):    
-                    PlayerUI.AddWidget(Canvas)
+                if(set EmergencyButtonText[Agent] = TextBlock):
+                    if(set EmergencyButtonCanvas[Agent] = Canvas):
+                        PlayerUI.AddWidget(Canvas)
 
                 spawn:
                     RemoveEmergencyButtonUI(PlayerUI, Canvas)
@@ -237,7 +235,7 @@ game_manager_device := class(creative_device):
     SetupProps(): void=
         var PropsIndex: int = 0
 
-        for (CreativeObject : Self.FindCreativeObjectsWithTag(TeamDeviceTag{})):
+        for (CreativeObject : Self.FindCreativeObjectsWithTag(TeamDeviceTag)):
             for (Player -> CustomPlayer : CustomPlayers):
                 if:
                     CustomPlayer.IsImposter = false
@@ -305,9 +303,7 @@ game_manager_device := class(creative_device):
 
                 FortCharacter.Damage(100000.0)
 
-                if:
-                    CurrentPlayerStats := PlayerStatsManager.GetPlayerStats[EliminatingAgent]
-                then:
+                if(PlayerStatsManager.GetPlayerStats[EliminatingAgent]):
                     PlayerStatsManager.RecordPlayerStat(EliminatingAgent, StatType.Kills, 1)
 
                     EliminationAccolade.Award(EliminatingAgent)
@@ -327,14 +323,15 @@ game_manager_device := class(creative_device):
                     FortCharacter := Player.GetFortCharacter[]
                 then:
                     if(CustomPlayer.FollowProps.MoveableProp.TeleportTo[
-                        FortCharacter.GetTransform().Translation, 
+                        FortCharacter.GetTransform().Translation,
                         FortCharacter.GetTransform().Rotation
-                    ]):  
+                    ]):
+                        # Teleport succeeded
 
     HandlePlayerElimination(EliminationResult: elimination_result): void=
         FortCharacter := EliminationResult.EliminatedCharacter
 
-        for(CreativeObject : FindCreativeObjectsWithTag(VotingDeviceTag{})):
+        for(CreativeObject : FindCreativeObjectsWithTag(VotingDeviceTag)):
             # Set eliminated player as dead
             if:
                 VotingDevice := voting_device[CreativeObject]
@@ -433,12 +430,12 @@ game_manager_device := class(creative_device):
     Reported(Agent: agent): void=
         ReportedSound.Play()
 
-        for(CreativeObject : FindCreativeObjectsWithTag(VotingDeviceTag{})):
+        for(CreativeObject : FindCreativeObjectsWithTag(VotingDeviceTag)):
             if(VotingDevice := voting_device[CreativeObject]):
                 VotingDevice.AddUI(Agent)
 
         # Teleport the player to the meeting table when something is reported
-        for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
+        for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag)):
             if(PlayerManager := player_manager_device[CreativeObject]):
                 PlayerManager.TeleportPlayersToStart()
 

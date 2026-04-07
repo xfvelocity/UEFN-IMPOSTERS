@@ -7,8 +7,6 @@ using { /Fortnite.com/Characters }
 using { /UnrealEngine.com/Temporary/SpatialMath }
 
 team_device := class(creative_device):
-    @editable
-    EliminateCooldown: float = 5.0
     @editable 
     ImposterClassSelector: class_and_team_selector_device = class_and_team_selector_device{}
     @editable 
@@ -25,7 +23,7 @@ team_device := class(creative_device):
 
     OnBegin<override>()<suspends>:void=
         Print("TeamDevice OnBegin")
-        for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag{})):
+        for(CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag)):
             if(PlayerManager := player_manager_device[CreativeObject]):
                 PlayerManager.PlayersSet.Await()
                 Print("TasksDevice After Await")
@@ -84,6 +82,6 @@ team_device := class(creative_device):
         then:
             SetImposter(Player)
 
-        if(Agents.Length >= 5):
+        if(Agents.Length >= 7):
             set ImpostersCount = 2
             SetSecondImposter()

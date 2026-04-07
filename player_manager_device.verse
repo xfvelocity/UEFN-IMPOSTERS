@@ -162,7 +162,7 @@ player_manager_device := class(creative_device):
         Print("PlayerLeft")
         if(GameHasStarted = false):
         else:
-            for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag{})):
+            for(CreativeObject : FindCreativeObjectsWithTag(GameManagerTag)):
                 if:
                     GameManager := game_manager_device[CreativeObject]
                     GameHasStarted = true
