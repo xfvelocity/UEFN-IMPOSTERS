@@ -1,29 +1,44 @@
 using { /Fortnite.com/Characters }
 using { /Fortnite.com/Devices }
 using { /Fortnite.com/Marketplace }
-using { /Fortnite.com/UI }
 using { /UnrealEngine.com/Temporary/Diagnostics }
-using { /UnrealEngine.com/Temporary/SpatialMath }
-using { /UnrealEngine.com/Temporary/UI }
-using { /Verse.org/Colors }
-using { /Verse.org/Colors/NamedColors }
 using { /Verse.org/Simulation }
 using { /Verse.org/Simulation/Tags }
+using { /Fortnite.com/AI }
+
+using { Definitions }
+
 
 transactions_device := class(creative_device):
     @editable
     Button: button_device = button_device{}
 
-    # OnBegin<override>()<suspends>:void=
-    #     Button.InteractedWithEvent.Subscribe(OnButtonInteraction)
+    var CustomPlayers: [player]custom_player = map{}
 
-    # OnButtonInteraction(Agent:agent):void=
-    #     if (Player := player[Agent]):
-    #         # Shows shop UI with list of selected offers
-    #         spawn{TryBuyOffer(Player, Definitions.Offers.engineer_access{})}
+    OnBegin<override>()<suspends>: void =
+        for (CreativeObject : FindCreativeObjectsWithTag(PlayerManagerTag)):
+            if (PlayerManager := player_manager_device[CreativeObject]):
+                PlayerManager.PlayersSet.Await()
+                set CustomPlayers = PlayerManager.CustomPlayers
 
-    # TryBuyOffer(Player:player, Offer : offer)<suspends>:void =
-    #     Result := BuyOffer(Player, Offer)
- 
-    #     if (not Result?):
-    #         Print("Failed to buy.")
+        Button.InteractedWithEvent.Subscribe(OnButtonInteraction)
+
+    OnButtonInteraction(Agent: agent): void =
+        Print("OnButtonInteraction")
+        if (Player := player[Agent]):
+            spawn { TryBuySpeedBoost(Player) }
+
+    TryBuySpeedBoost(Player: player)<suspends>: void =
+        Result := GrantEntitlement(Player, Definitions.Products.speed_boost)
+        if (Result = true):
+            ApplySpeedBoost(Player)
+
+    ApplySpeedBoost(Player: player): void =
+        if:
+            CustomPlayer := CustomPlayers[Player]
+            CustomPlayer.HasSpeedBoost = false
+            FortCharacter := Player.GetFortCharacter[]
+            Nav := FortCharacter.GetNavigatable[]
+        then:
+            set CustomPlayer.HasSpeedBoost = true
+            Nav.SetMovementSpeedMultiplier(1.5)

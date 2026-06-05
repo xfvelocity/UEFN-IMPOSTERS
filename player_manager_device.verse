@@ -22,6 +22,7 @@ custom_player := class<concrete>:
     var IsImposter: logic = false
     var IsDead: logic = false
     var PlayerClass: int = 0
+    var HasSpeedBoost: logic = false
 
 player_count_stats := class:
     @editable
